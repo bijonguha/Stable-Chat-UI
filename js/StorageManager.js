@@ -38,6 +38,7 @@ export class StorageManager {
             url: 'http://localhost:8000/chat',
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            model: 'custom-notset',
             isDefault: true,
             isStreaming: false
         };

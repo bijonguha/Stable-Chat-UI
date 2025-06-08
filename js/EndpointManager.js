@@ -76,12 +76,14 @@ export class EndpointManager {
         document.getElementById('endpoint-url').value = endpoint.url;
         document.getElementById('endpoint-method').value = endpoint.method;
         document.getElementById('endpoint-headers').value = JSON.stringify(endpoint.headers, null, 2);
+        document.getElementById('endpoint-model').value = endpoint.model || '';
         document.getElementById('streaming-toggle').checked = endpoint.isStreaming || false;
     }
 
     resetForm() {
         this.endpointForm.reset();
         document.getElementById('endpoint-headers').value = '{\n  "Content-Type": "application/json"\n}';
+        document.getElementById('endpoint-model').value = '';
         document.getElementById('streaming-toggle').checked = false;
     }
 
@@ -111,6 +113,7 @@ export class EndpointManager {
         const url = document.getElementById('endpoint-url').value.trim();
         const method = document.getElementById('endpoint-method').value;
         const headersText = document.getElementById('endpoint-headers').value.trim();
+        const model = document.getElementById('endpoint-model').value.trim();
         const isStreaming = document.getElementById('streaming-toggle').checked;
         
         if (!name || !url) {
@@ -119,7 +122,7 @@ export class EndpointManager {
         
         const headers = headersText ? Utils.validateJsonString(headersText) : {};
         
-        return { name, url, method, headers, isStreaming };
+        return { name, url, method, headers, model, isStreaming };
     }
 
     createEndpoint(formData) {

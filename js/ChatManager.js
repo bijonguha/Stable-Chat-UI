@@ -27,6 +27,8 @@ export class ChatManager {
         this.chatContainer = document.getElementById('chat-container');
         this.chatToggle = document.getElementById('chat-toggle');
         this.chatCloseBtn = document.getElementById('chat-close-btn');
+        this.conversationIdElement = document.getElementById('conversation-id');
+        this.conversationValueElement = document.getElementById('conversation-value');
     }
 
     initEventListeners() {
@@ -69,7 +71,17 @@ export class ChatManager {
 
     resetConnection() {
         this.conversationId = null;
+        this.updateConversationIdDisplay();
         this.checkConnection();
+    }
+
+    updateConversationIdDisplay() {
+        if (this.conversationId) {
+            this.conversationValueElement.textContent = this.conversationId;
+            this.conversationIdElement.style.display = 'block';
+        } else {
+            this.conversationIdElement.style.display = 'none';
+        }
     }
 
     openChat() {
@@ -193,7 +205,8 @@ export class ChatManager {
                 ...(endpoint?.headers || {})
             },
             body: JSON.stringify({
-                messages: [{ text: message }],
+                messages: [{ role: "user", text: message }],
+                model: endpoint?.model || "custom-notset",
                 conversation_id: this.conversationId,
                 stream: true
             })
@@ -288,6 +301,7 @@ export class ChatManager {
         // Update conversation ID if provided
         if (data.conversation_id && !this.conversationId) {
             this.conversationId = data.conversation_id;
+            this.updateConversationIdDisplay();
         }
     }
 
@@ -337,7 +351,8 @@ export class ChatManager {
         };
         
         const requestBody = {
-            messages: [{ text: message }],
+            messages: [{ role: "user", text: message }],
+            model: endpoint?.model || "custom-notset",
             conversation_id: this.conversationId
         };
         
@@ -357,10 +372,11 @@ export class ChatManager {
     handleApiResponse(data) {
         if (!this.conversationId && data.conversation_id) {
             this.conversationId = data.conversation_id;
+            this.updateConversationIdDisplay();
         }
         
         this.addMessage({
-            text: data.response || data.text || data.message || 'No response received',
+            text: data.text || data.response || data.message || 'No response received',
             role: 'assistant',
             timestamp: data.timestamp || new Date().toISOString()
         });
@@ -414,6 +430,12 @@ export class ChatManager {
     showTyping() {
         this.isTyping = true;
         this.sendButton.disabled = true;
+        this.sendButton.textContent = 'Sending...';
+        
+        const existingTyping = document.getElementById('typing-indicator');
+        if (existingTyping) {
+            existingTyping.remove();
+        }
         
         const typingElement = document.createElement('div');
         typingElement.id = 'typing-indicator';
@@ -434,6 +456,7 @@ export class ChatManager {
     hideTyping() {
         this.isTyping = false;
         this.sendButton.disabled = false;
+        this.sendButton.textContent = 'Send';
         
         const typingElement = document.getElementById('typing-indicator');
         if (typingElement) {

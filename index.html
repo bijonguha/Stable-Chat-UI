@@ -46,6 +46,10 @@
                     <textarea class="form-input" id="endpoint-headers" rows="3" placeholder='{"Authorization": "Bearer your-key"}'></textarea>
                 </div>
                 <div class="form-group">
+                    <label class="form-label" for="endpoint-model">Model (Optional)</label>
+                    <input type="text" class="form-input" id="endpoint-model" placeholder="e.g., custom-notset, gpt-4, claude-3">
+                </div>
+                <div class="form-group">
                     <label class="form-label" for="endpoint-method">Method</label>
                     <select class="form-input" id="endpoint-method">
                         <option value="POST">POST</option>
@@ -83,6 +87,10 @@
             <div class="chat-status">
                 <div class="status-dot"></div>
                 <span id="status-text">Ready</span>
+            </div>
+            <div class="conversation-id" id="conversation-id" style="display: none;">
+                <span class="conversation-label">ID:</span>
+                <span class="conversation-value" id="conversation-value"></span>
             </div>
             <!-- Chat Toggle (inside chat) -->
             <button class="chat-toggle repositioned" id="chat-close-btn">✕</button>
