@@ -7,12 +7,13 @@ A modern, universal chat interface for connecting to any AI service via configur
 ## Features
 
 - **Universal AI Interface**: Connect to any AI chat service with a compatible API
-- **Configurable Endpoints**: Add, edit, and manage multiple API endpoints
+- **DeepChat Development Standards**: Follows DeepChat format for seamless integration
+- **Configurable Endpoints**: Add, edit, and manage multiple API endpoints with optional model specification
 - **Streaming Support**: Real-time streaming responses for compatible APIs
-- **Markdown Rendering**: Rich text formatting in chat messages
-- **Code Highlighting**: Syntax highlighting for code blocks with copy functionality
+- **Markdown Rendering**: Rich text formatting in chat messages with code highlighting
+- **Conversation Tracking**: Displays conversation IDs with floating chip design
 - **Responsive Design**: Works on desktop and mobile devices
-- **Local Storage**: Configurations saved in browser storage
+- **Local Storage**: Configurations and conversations saved in browser storage
 - **No Dependencies**: Built with vanilla JavaScript, no external libraries required
 
 ## Getting Started
@@ -30,8 +31,11 @@ A modern, universal chat interface for connecting to any AI service via configur
    # Using Python
    python -m http.server 8080
    
-   # Using Node.js
-   npx serve
+   # Using Node.js (install globally first: npm install -g serve)
+   serve -s . -l 8080
+   
+   # Using VS Code Live Server extension
+   # Right-click index.html → "Open with Live Server"
    ```
 
 3. Open your browser and navigate to `http://localhost:8080`
@@ -41,26 +45,30 @@ A modern, universal chat interface for connecting to any AI service via configur
 To use Stable Chat UI, you need to configure at least one API endpoint:
 
 1. Click the "+ Add Endpoint" button
-2. Enter a name for your endpoint (e.g., "GPT-4", "Claude", "Gemini")
+2. Enter a name for your endpoint (e.g., "GPT-4", "Claude", "Local Server")
 3. Enter the URL of the API endpoint
 4. Configure headers (typically including your API key)
-5. Select the HTTP method (usually POST)
-6. Toggle streaming if your API supports it
-7. Click Save
+5. Specify model name (optional, defaults to "custom-notset")
+6. Select the HTTP method (usually POST)
+7. Toggle streaming if your API supports it
+8. Click Save
 
 ## API Compatibility
 
-Stable Chat UI is designed to work with various AI chat APIs. The application expects the following general format for requests and responses:
+Stable Chat UI follows **DeepChat development standards** and is designed to work with various AI chat APIs. The application expects the following exact format for requests and responses:
 
 ### Request Format
 
 ```json
 {
   "messages": [
-    { "text": "Your message here" }
+    {
+      "role": "user",
+      "text": "Your message here"
+    }
   ],
-  "conversation_id": "optional-conversation-id",
-  "stream": true|false
+  "model": "custom-notset",
+  "conversation_id": "optional-conversation-id"
 }
 ```
 
@@ -70,7 +78,7 @@ For regular (non-streaming) responses:
 
 ```json
 {
-  "response": "AI response text",
+  "text": "AI response text",
   "conversation_id": "conversation-id"
 }
 ```
@@ -79,6 +87,23 @@ For streaming responses, the application supports:
 - Server-Sent Events (SSE)
 - Line-delimited JSON
 - Plain text streaming
+
+### CORS Configuration
+
+For local development with backend APIs, ensure CORS is configured:
+
+```python
+# FastAPI example
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],  # Your UI port
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
 
 ## Project Structure
 
@@ -105,10 +130,11 @@ You can modify the default endpoint in `js/StorageManager.js`:
 static getDefaultEndpoint() {
     return {
         id: 'default',
-        name: 'Your API',
-        url: 'https://your-api-url.com/chat',
+        name: 'Local Server',
+        url: 'http://localhost:8000/chat',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        model: 'custom-notset',
         isDefault: true,
         isStreaming: false
     };
@@ -127,7 +153,17 @@ If you encounter issues:
 - Verify your API key and headers
 - Ensure your API service is running and accessible
 - Check browser console for any errors
-- Verify that your API response format is compatible
+- Verify that your API follows the exact DeepChat format (role, text, model fields)
+- Ensure your API returns `conversation_id` in responses
+- For streaming issues, verify your API supports Server-Sent Events
+
+### Common Issues
+
+**CORS Errors**: Configure CORS headers on your backend or serve the UI from the same domain as your API.
+
+**No Response**: Check browser console for errors, verify API response format matches the exact DeepChat structure above.
+
+**Conversation ID Not Showing**: Ensure your API returns `conversation_id` in the response. The ID will appear as a floating purple chip in the top-left corner of the chat.
 
 ## Browser Compatibility
 
