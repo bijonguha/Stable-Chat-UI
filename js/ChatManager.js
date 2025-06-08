@@ -193,7 +193,8 @@ export class ChatManager {
                 ...(endpoint?.headers || {})
             },
             body: JSON.stringify({
-                messages: [{ text: message }],
+                messages: [{ role: "user", text: message }],
+                model: "custom-notset",
                 conversation_id: this.conversationId,
                 stream: true
             })
@@ -337,7 +338,8 @@ export class ChatManager {
         };
         
         const requestBody = {
-            messages: [{ text: message }],
+            messages: [{ role: "user", text: message }],
+            model: "custom-notset",
             conversation_id: this.conversationId
         };
         
@@ -360,7 +362,7 @@ export class ChatManager {
         }
         
         this.addMessage({
-            text: data.response || data.text || data.message || 'No response received',
+            text: data.text || data.response || data.message || 'No response received',
             role: 'assistant',
             timestamp: data.timestamp || new Date().toISOString()
         });
@@ -414,6 +416,12 @@ export class ChatManager {
     showTyping() {
         this.isTyping = true;
         this.sendButton.disabled = true;
+        this.sendButton.textContent = 'Sending...';
+        
+        const existingTyping = document.getElementById('typing-indicator');
+        if (existingTyping) {
+            existingTyping.remove();
+        }
         
         const typingElement = document.createElement('div');
         typingElement.id = 'typing-indicator';
@@ -434,6 +442,7 @@ export class ChatManager {
     hideTyping() {
         this.isTyping = false;
         this.sendButton.disabled = false;
+        this.sendButton.textContent = 'Send';
         
         const typingElement = document.getElementById('typing-indicator');
         if (typingElement) {
