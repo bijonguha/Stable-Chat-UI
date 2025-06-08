@@ -411,6 +411,39 @@ body::before {
     background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
+/* Style for the close button inside chat header */
+.chat-toggle.repositioned {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.1);
+    transform: none !important;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chat-toggle.repositioned:hover {
+    background: rgba(139, 92, 246, 0.2);
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.2);
+}
+
+/* Adjust hover effect for repositioned button */
+.chat-toggle.repositioned:hover {
+    transform: none !important;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
 /* Chat Container */
 .chat-container {
     position: fixed;
@@ -442,6 +475,7 @@ body::before {
     padding: 1rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.2);
     text-align: center;
+    position: relative; /* Make it a positioned ancestor */
 }
 
 .chat-title {
@@ -1059,6 +1093,14 @@ body::before {
         width: 40px;
         height: 40px;
         font-size: 1.2rem;
+    }
+    
+    .chat-toggle.repositioned {
+        top: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
     }
     
     .app-footer {
