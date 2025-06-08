@@ -27,6 +27,8 @@ export class ChatManager {
         this.chatContainer = document.getElementById('chat-container');
         this.chatToggle = document.getElementById('chat-toggle');
         this.chatCloseBtn = document.getElementById('chat-close-btn');
+        this.conversationIdElement = document.getElementById('conversation-id');
+        this.conversationValueElement = document.getElementById('conversation-value');
     }
 
     initEventListeners() {
@@ -69,7 +71,17 @@ export class ChatManager {
 
     resetConnection() {
         this.conversationId = null;
+        this.updateConversationIdDisplay();
         this.checkConnection();
+    }
+
+    updateConversationIdDisplay() {
+        if (this.conversationId) {
+            this.conversationValueElement.textContent = this.conversationId;
+            this.conversationIdElement.style.display = 'block';
+        } else {
+            this.conversationIdElement.style.display = 'none';
+        }
     }
 
     openChat() {
@@ -289,6 +301,7 @@ export class ChatManager {
         // Update conversation ID if provided
         if (data.conversation_id && !this.conversationId) {
             this.conversationId = data.conversation_id;
+            this.updateConversationIdDisplay();
         }
     }
 
@@ -359,6 +372,7 @@ export class ChatManager {
     handleApiResponse(data) {
         if (!this.conversationId && data.conversation_id) {
             this.conversationId = data.conversation_id;
+            this.updateConversationIdDisplay();
         }
         
         this.addMessage({
