@@ -2,7 +2,7 @@
 
 A modern, universal chat interface for connecting to any AI service via configurable API endpoints. Designed for easy local or remote AI chat integration, with a beautiful, responsive UI and endpoint management.
 
-![Stable Chat UI](https://placeholder-for-screenshot.com/stable-chat-ui.png)
+![Stable Chat UI](images/stable-chat.png)
 
 ## Features
 

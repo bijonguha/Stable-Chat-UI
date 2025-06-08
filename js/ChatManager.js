@@ -26,10 +26,12 @@ export class ChatManager {
         this.statusText = document.getElementById('status-text');
         this.chatContainer = document.getElementById('chat-container');
         this.chatToggle = document.getElementById('chat-toggle');
+        this.chatCloseBtn = document.getElementById('chat-close-btn');
     }
 
     initEventListeners() {
-        this.chatToggle.addEventListener('click', () => this.toggleChat());
+        this.chatToggle.addEventListener('click', () => this.openChat());
+        this.chatCloseBtn.addEventListener('click', () => this.closeChat());
         
         this.chatInput.addEventListener('input', () => this.autoResizeInput());
         this.chatInput.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -70,20 +72,12 @@ export class ChatManager {
         this.checkConnection();
     }
 
-    toggleChat() {
-        this.isChatOpen = !this.isChatOpen;
-        
-        if (this.isChatOpen) {
-            this.openChat();
-        } else {
-            this.closeChat();
-        }
-    }
-
     openChat() {
+        if (this.isChatOpen) return;
+        
+        this.isChatOpen = true;
         this.chatContainer.classList.add('open');
-        this.chatToggle.innerHTML = '✕';
-        this.chatToggle.classList.add('open');
+        this.chatToggle.style.display = 'none'; // Hide the chat toggle button
         
         if (this.messagesContainer.children.length === 0) {
             this.addWelcomeMessage();
@@ -93,9 +87,11 @@ export class ChatManager {
     }
 
     closeChat() {
+        if (!this.isChatOpen) return;
+        
+        this.isChatOpen = false;
         this.chatContainer.classList.remove('open');
-        this.chatToggle.innerHTML = '💬';
-        this.chatToggle.classList.remove('open');
+        this.chatToggle.style.display = 'block'; // Show the chat toggle button
     }
 
     addWelcomeMessage() {
