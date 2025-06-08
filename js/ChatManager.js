@@ -194,7 +194,7 @@ export class ChatManager {
             },
             body: JSON.stringify({
                 messages: [{ role: "user", text: message }],
-                model: "custom-notset",
+                model: endpoint?.model || "custom-notset",
                 conversation_id: this.conversationId,
                 stream: true
             })
@@ -339,7 +339,7 @@ export class ChatManager {
         
         const requestBody = {
             messages: [{ role: "user", text: message }],
-            model: "custom-notset",
+            model: endpoint?.model || "custom-notset",
             conversation_id: this.conversationId
         };
         
