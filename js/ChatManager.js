@@ -29,15 +29,20 @@ export class ChatManager {
         this.chatCloseBtn = document.getElementById('chat-close-btn');
         this.conversationIdElement = document.getElementById('conversation-id');
         this.conversationValueElement = document.getElementById('conversation-value');
+        this.newChatBtn = document.getElementById('new-chat-btn');
+        this.resizeHandle = document.getElementById('resize-handle');
     }
 
     initEventListeners() {
         this.chatToggle.addEventListener('click', () => this.openChat());
         this.chatCloseBtn.addEventListener('click', () => this.closeChat());
+        this.newChatBtn.addEventListener('click', () => this.startNewChatSession());
         
         this.chatInput.addEventListener('input', () => this.autoResizeInput());
         this.chatInput.addEventListener('keydown', (e) => this.handleKeyDown(e));
         this.sendButton.addEventListener('click', () => this.sendMessage());
+        
+        this.initResizeHandling();
     }
 
     autoResizeInput() {
@@ -466,6 +471,80 @@ export class ChatManager {
 
     scrollToBottom() {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+    }
+
+    startNewChatSession() {
+        // Clear the conversation
+        this.conversationId = null;
+        this.updateConversationIdDisplay();
+        
+        // Clear all messages
+        this.messagesContainer.innerHTML = '';
+        
+        // Add welcome message for new session
+        this.addWelcomeMessage();
+        
+        // Reset any streaming state
+        this.isStreaming = false;
+        this.currentStreamingMessage = null;
+        this.sendButton.disabled = false;
+        this.sendButton.textContent = 'Send';
+        
+        // Focus on input
+        this.chatInput.focus();
+        
+        console.log('🆕 New chat session started');
+    }
+
+    initResizeHandling() {
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight;
+
+        this.resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = parseInt(document.defaultView.getComputedStyle(this.chatContainer).width, 10);
+            startHeight = parseInt(document.defaultView.getComputedStyle(this.chatContainer).height, 10);
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            
+            // Prevent text selection during resize
+            document.body.style.userSelect = 'none';
+            this.chatContainer.style.transition = 'none';
+            
+            e.preventDefault();
+        });
+
+        const handleMouseMove = (e) => {
+            if (!isResizing) return;
+            
+            const width = startWidth + (startX - e.clientX);
+            const height = startHeight + (startY - e.clientY);
+            
+            // Apply constraints
+            const minWidth = 300;
+            const maxWidth = 800;
+            const minHeight = 400;
+            const maxHeight = window.innerHeight * 0.9;
+            
+            const constrainedWidth = Math.min(Math.max(width, minWidth), maxWidth);
+            const constrainedHeight = Math.min(Math.max(height, minHeight), maxHeight);
+            
+            this.chatContainer.style.width = constrainedWidth + 'px';
+            this.chatContainer.style.height = constrainedHeight + 'px';
+        };
+
+        const handleMouseUp = () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            
+            // Restore text selection and transitions
+            document.body.style.userSelect = '';
+            this.chatContainer.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        };
     }
 }
 
