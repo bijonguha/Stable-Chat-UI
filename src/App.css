@@ -384,10 +384,67 @@ body::before {
     background: rgba(75, 85, 99, 0.8);
 }
 
+/* Toggle Styles */
+.streaming-toggle-container {
+    margin-bottom: 1rem;
+}
+
+.toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.toggle-input {
+    display: none;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-slider {
+    width: 40px;
+    height: 20px;
+    background: rgba(75, 85, 99, 0.5);
+    border-radius: 10px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.toggle-input:checked + .toggle-label .toggle-slider {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.toggle-input:checked + .toggle-label .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.toggle-text {
+    font-size: 0.85rem;
+    color: #d1d5db;
+}
+
 /* Chat Toggle */
 .chat-toggle {
     position: fixed;
-    bottom: 48px; /* Increased to make room for footer */
+    bottom: 48px;
     right: 24px;
     width: 56px;
     height: 56px;
@@ -519,7 +576,7 @@ body::before {
 /* Chat Container */
 .chat-container {
     position: fixed;
-    bottom: 48px; /* Increased to make room for footer */
+    bottom: 48px;
     right: 24px;
     width: 380px;
     height: 580px;
@@ -552,7 +609,7 @@ body::before {
     padding: 1rem;
     border-bottom: 1px solid rgba(75, 85, 99, 0.2);
     text-align: center;
-    position: relative; /* Make it a positioned ancestor */
+    position: relative;
 }
 
 .chat-title {
@@ -571,92 +628,7 @@ body::before {
     gap: 6px;
 }
 
-/* Option 1: Minimalist badge style 
-.conversation-id {
-    font-size: 0.65rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    margin-top: 2px;
-}
-
-.conversation-label {
-    color: #6b7280;
-    font-weight: 400;
-}
-
-.conversation-value {
-    color: #a78bfa;
-    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-    background: rgba(139, 92, 246, 0.1);
-    padding: 2px 6px;
-    border-radius: 8px;
-    font-size: 0.6rem;
-    font-weight: 500;
-}
-*/
-
-/* Option 2: Pill style (uncomment to use) 
-.conversation-id {
-    font-size: 0.65rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
-    padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.15));
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-}
-
-.conversation-label {
-    color: #8b5cf6;
-    font-weight: 500;
-    font-size: 0.6rem;
-}
-
-.conversation-value {
-    color: #e5e7eb;
-    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-    font-size: 0.6rem;
-    font-weight: 400;
-}
-*/
-
-/* Option 3: Status bar style (uncomment to use)
-.conversation-id {
-    font-size: 0.65rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 4px;
-    padding: 3px 8px;
-    background: rgba(31, 41, 55, 0.8);
-    border-left: 3px solid #8b5cf6;
-    border-radius: 0 4px 4px 0;
-}
-
-.conversation-label {
-    color: #9ca3af;
-    font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.conversation-value {
-    color: #e5e7eb;
-    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-    font-size: 0.6rem;
-    background: rgba(139, 92, 246, 0.2);
-    padding: 1px 4px;
-    border-radius: 3px;
-}
-*/
-
-/* Option 4: Floating chip style (uncomment to use)
+/* Floating chip style */
 .conversation-id {
     position: absolute;
     top: 8px;
@@ -683,36 +655,6 @@ body::before {
     font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
     font-weight: 600;
 }
-*/
-
-/* Option 4: Floating chip style */
-.conversation-id {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    font-size: 0.6rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 6px;
-    background: rgba(139, 92, 246, 0.9);
-    color: white;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-    backdrop-filter: blur(10px);
-    z-index: 10;
-}
-
-.conversation-label {
-    font-weight: 500;
-    opacity: 0.8;
-}
-
-.conversation-value {
-    font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-    font-weight: 600;
-}
-
 
 .status-dot {
     width: 6px;
@@ -1045,7 +987,7 @@ body::before {
         right: 10px;
         left: 10px;
         border-radius: 16px;
-        resize: none; /* Disable resize on mobile */
+        resize: none;
     }
 
     .chat-toggle {
@@ -1072,7 +1014,7 @@ body::before {
     }
 
     .new-chat-btn .btn-text {
-        display: none; /* Hide text on mobile, show only icon */
+        display: none;
     }
 
     .new-chat-btn .btn-icon {
@@ -1080,7 +1022,7 @@ body::before {
     }
 
     .resize-handle {
-        display: none; /* Hide resize handle on mobile */
+        display: none;
     }
 
     .chat-toggle.repositioned {
@@ -1106,192 +1048,6 @@ body::before {
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: rgba(139, 92, 246, 0.5);
-}
-
-/* Hamburger Menu and Documentation Panel */
-.menu-toggle {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #374151, #1f2937);
-    border: 1px solid rgba(75, 85, 99, 0.3);
-    border-radius: 12px;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
-    z-index: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.menu-toggle:hover {
-    background: linear-gradient(135deg, #4b5563, #374151);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
-}
-
-.menu-toggle.active {
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    border-color: #8b5cf6;
-}
-
-.doc-panel {
-    position: fixed;
-    top: 0;
-    right: -400px;
-    width: 400px;
-    height: 100vh;
-    background: linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95));
-    border-left: 1px solid rgba(75, 85, 99, 0.3);
-    backdrop-filter: blur(20px);
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-    z-index: 550;
-    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-y: auto;
-}
-
-.doc-panel.open {
-    right: 0;
-}
-
-.doc-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid rgba(75, 85, 99, 0.2);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    background: linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95));
-    backdrop-filter: blur(20px);
-    z-index: 2;
-}
-
-.doc-header h2 {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: #f3f4f6;
-    margin: 0;
-}
-
-.doc-close {
-    background: none;
-    border: none;
-    color: #9ca3af;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.doc-close:hover {
-    background: rgba(75, 85, 99, 0.3);
-    color: #e5e7eb;
-}
-
-.doc-content {
-    padding: 1.5rem;
-    color: #e5e7eb;
-}
-
-/* Menu Options */
-.menu-options {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.menu-option {
-    border-radius: 8px;
-    overflow: hidden;
-    background: rgba(31, 41, 55, 0.5);
-    border: 1px solid rgba(75, 85, 99, 0.2);
-    transition: all 0.3s ease;
-}
-
-.menu-option:hover {
-    border-color: rgba(124, 58, 237, 0.4);
-}
-
-.menu-option-header {
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    background: rgba(31, 41, 55, 0.8);
-}
-
-.menu-option-title {
-    font-weight: 500;
-    color: #e5e7eb;
-}
-
-.menu-option-icon {
-    color: #8b5cf6;
-    font-weight: bold;
-    font-size: 1.2rem;
-}
-
-.menu-option-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-    padding: 0 1rem;
-}
-
-.menu-option-content.expanded {
-    max-height: 1000px;
-    padding: 1rem;
-    border-top: 1px solid rgba(75, 85, 99, 0.2);
-}
-
-#docs-option {
-    cursor: pointer;
-}
-
-#docs-option:hover .menu-option-title {
-    color: #8b5cf6;
-}
-
-.doc-content h3 {
-    font-size: 1.3rem;
-    font-weight: 500;
-    margin: 0 0 1rem 0;
-    color: #f3f4f6;
-}
-
-.doc-content h4 {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin: 1.5rem 0 0.75rem 0;
-    color: #f3f4f6;
-}
-
-.doc-content p {
-    margin: 0.75rem 0;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    color: #d1d5db;
-}
-
-.doc-content ul,
-.doc-content ol {
-    margin: 0.75rem 0;
-    padding-left: 1.5rem;
-}
-
-.doc-content li {
-    margin: 0.5rem 0;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    color: #d1d5db;
 }
 
 /* Footer */
@@ -1323,36 +1079,4 @@ body::before {
 .app-footer a:hover {
     color: #a78bfa;
     text-decoration: underline;
-}
-
-/* Mobile Responsive for Documentation */
-@media (max-width: 768px) {
-    .doc-panel {
-        width: 100%;
-        right: -100%;
-    }
-    
-    .menu-toggle {
-        top: 16px;
-        right: 16px;
-        width: 40px;
-        height: 40px;
-        font-size: 1.2rem;
-    }
-    
-    .chat-toggle.repositioned {
-        top: 8px;
-        right: 8px;
-        width: 32px;
-        height: 32px;
-        font-size: 0.8rem;
-    }
-    
-    .app-footer {
-        padding: 0.5rem 0;
-    }
-    
-    .app-footer p {
-        font-size: 0.8rem;
-    }
 }

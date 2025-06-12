@@ -1,8 +1,8 @@
-# Stable Chat UI
+# Stable Chat UI - React Version
 
-A modern, universal chat interface for connecting to any AI service via configurable API endpoints. Designed for easy local or remote AI chat integration, with a beautiful, responsive UI and endpoint management.
+A modern, universal chat interface for connecting to any AI service via configurable API endpoints. Built with React for better performance, maintainability, and developer experience.
 
-![Stable Chat UI](images/stable-chat.png)
+![Stable Chat UI](public/stable-chat.png)
 
 ## Features
 
@@ -12,9 +12,11 @@ A modern, universal chat interface for connecting to any AI service via configur
 - **Streaming Support**: Real-time streaming responses for compatible APIs
 - **Markdown Rendering**: Rich text formatting in chat messages with code highlighting
 - **Conversation Tracking**: Displays conversation IDs with floating chip design
+- **New Chat Sessions**: Start fresh conversations with one click
+- **Resizable Chat Window**: Drag to resize chat interface with size constraints
 - **Responsive Design**: Works on desktop and mobile devices
 - **Local Storage**: Configurations and conversations saved in browser storage
-- **No Dependencies**: Built with vanilla JavaScript, no external libraries required
+- **React Architecture**: Component-based architecture for better maintainability
 
 ## Getting Started
 
@@ -26,19 +28,27 @@ A modern, universal chat interface for connecting to any AI service via configur
    cd stable-chat-ui
    ```
 
-2. Serve the files using any HTTP server:
+2. Install dependencies and start the development server:
    ```bash
-   # Using Python
-   python -m http.server 8080
+   # Install dependencies
+   npm install
    
-   # Using Node.js (install globally first: npm install -g serve)
-   serve -s . -l 8080
-   
-   # Using VS Code Live Server extension
-   # Right-click index.html → "Open with Live Server"
+   # Start development server
+   npm start
    ```
 
-3. Open your browser and navigate to `http://localhost:8080`
+3. Open your browser and navigate to `http://localhost:3000`
+
+### Production Build
+
+```bash
+# Build for production
+npm run build
+
+# Serve production build
+npm install -g serve
+serve -s build
+```
 
 ### Configuration
 
@@ -107,43 +117,53 @@ app.add_middleware(
 
 ## Project Structure
 
-The project is organized into modular JavaScript files:
+The React project is organized into components and utilities:
 
-- `app.js` - Main application entry point
-- `js/StableChatApp.js` - Main application orchestrator
-- `js/EndpointManager.js` - Manages API endpoints and their UI
-- `js/ChatManager.js` - Handles chat functionality and API communication
-- `js/StorageManager.js` - Manages localStorage operations
-- `js/MarkdownParser.js` - Handles markdown parsing and rendering
-- `js/Utils.js` - Shared utility functions
-- `js/MenuManager.js` - Manages the menu and documentation
-- `index.html` - Main HTML structure
-- `styles.css` - CSS styling
+```
+src/
+├── components/           # React components
+│   ├── Header.js        # Logo and title section
+│   ├── EndpointSection.js # API endpoint management
+│   ├── ChatContainer.js # Main chat interface
+│   ├── ChatHeader.js    # Chat header with controls
+│   ├── ChatMessages.js  # Message list container
+│   └── ...              # Other UI components
+├── hooks/               # Custom React hooks
+│   ├── useLocalStorage.js
+│   ├── useChatApi.js
+│   └── useResizeHandler.js
+├── context/             # React Context for state
+│   └── AppContext.js
+├── utils/               # Utility functions
+│   ├── utils.js
+│   └── markdownParser.js
+├── App.js              # Main App component
+├── App.css             # Component styles
+└── index.js            # React entry point
+```
 
 ## Customization
 
 ### Adding a Default Endpoint
 
-You can modify the default endpoint in `js/StorageManager.js`:
+You can modify the default endpoint in `src/context/AppContext.js`:
 
 ```javascript
-static getDefaultEndpoint() {
-    return {
-        id: 'default',
-        name: 'Local Server',
-        url: 'http://localhost:8000/chat',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        model: 'custom-notset',
-        isDefault: true,
-        isStreaming: false
-    };
-}
+const getDefaultEndpoint = () => ({
+    id: 'default',
+    name: 'Local Server',
+    url: 'http://localhost:8000/chat',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    model: 'custom-notset',
+    isDefault: true,
+    isStreaming: false
+});
 ```
 
 ### Styling
 
-The application uses CSS variables for theming. You can modify the colors and styles in `styles.css`.
+The application uses CSS variables for theming. You can modify the colors and styles in `src/App.css`.
 
 ## Troubleshooting
 
