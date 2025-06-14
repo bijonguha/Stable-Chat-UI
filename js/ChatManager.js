@@ -1,5 +1,6 @@
 import { MarkdownParser } from './MarkdownParser.js';
 import { Utils } from './Utils.js';
+import { StorageManager } from './StorageManager.js';
 
 /**
  * ChatManager Module
@@ -149,9 +150,21 @@ export class ChatManager {
 
     async sendRegularMessage(message) {
         this.showTyping();
+        const startTime = performance.now();
         
         try {
             const response = await this.makeApiRequest(message);
+            const endTime = performance.now();
+            const responseTime = endTime - startTime;
+            
+            // Record response time for the current endpoint
+            const endpoint = this.endpointManager.activeEndpoint;
+            if (endpoint && endpoint.id) {
+                StorageManager.recordResponseTime(endpoint.id, responseTime);
+                // Trigger endpoint UI update to show new average
+                this.endpointManager.render();
+            }
+            
             this.handleApiResponse(response);
         } catch (error) {
             this.handleApiError(error);
@@ -167,6 +180,10 @@ export class ChatManager {
         
         // Create the streaming message container
         this.currentStreamingMessage = this.createStreamingMessage();
+        
+        // Track start time for streaming
+        this.streamingStartTime = performance.now();
+        this.streamingFirstResponseReceived = false;
         
         try {
             await this.makeStreamingRequest(message);
@@ -200,7 +217,20 @@ export class ChatManager {
 
     async makeStreamingRequest(message) {
         const endpoint = this.endpointManager.activeEndpoint;
-        const requestUrl = endpoint?.url || 'http://localhost:8000/chat/stream';
+        let requestUrl = endpoint?.url || 'http://localhost:8000/chat';
+        
+        // Ensure we're using HTTP for localhost
+        if (requestUrl.startsWith('https://localhost')) {
+            requestUrl = requestUrl.replace('https://', 'http://');
+        }
+        
+        // For streaming, append /stream if not already in URL
+        if (endpoint?.isStreaming && !requestUrl.includes('/stream')) {
+            requestUrl = requestUrl + '/stream';
+        } else if (!endpoint?.isStreaming && !requestUrl.includes('/chat')) {
+            requestUrl = requestUrl.replace(/\/$/, '') + '/chat/stream';
+        }
+        
         
         const requestOptions = {
             method: endpoint?.method || 'POST',
@@ -279,6 +309,21 @@ export class ChatManager {
     appendStreamContent(data) {
         if (!this.currentStreamingMessage) return;
         
+        // Record response time on first chunk received for streaming
+        if (!this.streamingFirstResponseReceived && this.streamingStartTime) {
+            const endTime = performance.now();
+            const responseTime = endTime - this.streamingStartTime;
+            
+            const endpoint = this.endpointManager.activeEndpoint;
+            if (endpoint && endpoint.id) {
+                StorageManager.recordResponseTime(endpoint.id, responseTime);
+                // Trigger endpoint UI update to show new average
+                this.endpointManager.render();
+            }
+            
+            this.streamingFirstResponseReceived = true;
+        }
+        
         // Extract content from different response formats
         let content = '';
         if (data.content) {
@@ -346,7 +391,13 @@ export class ChatManager {
 
     async makeApiRequest(message) {
         const endpoint = this.endpointManager.activeEndpoint;
-        const requestUrl = endpoint?.url || 'http://localhost:8000/chat';
+        let requestUrl = endpoint?.url || 'http://localhost:8000/chat';
+        
+        // Ensure we're using HTTP for localhost
+        if (requestUrl.startsWith('https://localhost')) {
+            requestUrl = requestUrl.replace('https://', 'http://');
+        }
+        
         const requestOptions = {
             method: endpoint?.method || 'POST',
             headers: {
