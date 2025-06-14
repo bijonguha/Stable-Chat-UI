@@ -177,9 +177,20 @@ export class EndpointManager {
             '<span class="streaming-badge"><span class="badge-icon">⚡</span>STREAMING</span>' :
             '<span class="regular-badge"><span class="badge-icon">✓</span>REGULAR</span>';
         
+        // Get average response time for this endpoint
+        const avgResponseTime = StorageManager.getAverageResponseTime(endpoint.id);
+        let responseTimeDisplay = '';
+        
+        if (avgResponseTime) {
+            // Convert to seconds and format
+            const responseTimeInSeconds = (avgResponseTime / 1000).toFixed(1);
+            
+            responseTimeDisplay = `<span class="response-time-display">${responseTimeInSeconds}s</span>`;
+        }
+        
         endpointElement.innerHTML = `
             <div class="endpoint-info">
-                <h3>${endpoint.name}${streamingBadge}</h3>
+                <h3>${endpoint.name}${streamingBadge}${responseTimeDisplay}</h3>
                 <p>${endpoint.url}</p>
             </div>
             <div class="endpoint-actions">
