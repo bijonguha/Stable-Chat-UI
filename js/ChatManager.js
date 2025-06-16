@@ -60,17 +60,33 @@ export class ChatManager {
     async checkConnection() {
         try {
             const endpoint = this.endpointManager.activeEndpoint;
-            if (endpoint && endpoint.url !== 'http://localhost:8000/chat') {
-                this.statusText.textContent = `Connected to ${endpoint.name}`;
-                return;
-            }
-            
-            const response = await fetch('http://localhost:8000/chat/status');
-            if (response.ok) {
-                this.statusText.textContent = 'Service Available';
+            if (endpoint) {
+                // Try to check the status endpoint for the configured endpoint
+                let statusUrl = endpoint.url;
+                
+                // For the default localhost endpoint, try /status
+                if (endpoint.url === 'http://localhost:8000/chat') {
+                    statusUrl = 'http://localhost:8000/chat/status';
+                } else {
+                    // For custom endpoints, just show connected status without checking
+                    this.statusText.textContent = `Connected to ${endpoint.name}`;
+                    return;
+                }
+                
+                const response = await fetch(statusUrl);
+                if (response.ok) {
+                    this.statusText.textContent = 'Service Available';
+                } else {
+                    this.statusText.textContent = `Connected to ${endpoint.name}`;
+                }
             }
         } catch (error) {
-            this.statusText.textContent = 'Check Configuration';
+            const endpoint = this.endpointManager.activeEndpoint;
+            if (endpoint) {
+                this.statusText.textContent = `Connected to ${endpoint.name}`;
+            } else {
+                this.statusText.textContent = 'Check Configuration';
+            }
         }
     }
 
@@ -200,7 +216,28 @@ export class ChatManager {
 
     async makeStreamingRequest(message) {
         const endpoint = this.endpointManager.activeEndpoint;
+<<<<<<< Updated upstream
         const requestUrl = endpoint?.url || 'http://localhost:8000/chat/stream';
+=======
+        let requestUrl = endpoint?.url || 'http://localhost:8000/chat';
+        
+        // Debug logging
+        console.log('Streaming - Active endpoint:', endpoint);
+        console.log('Streaming - Request URL:', requestUrl);
+        
+        // Ensure we're using HTTP for localhost
+        if (requestUrl.startsWith('https://localhost')) {
+            requestUrl = requestUrl.replace('https://', 'http://');
+        }
+        
+        // For streaming, append /stream if not already in URL
+        if (endpoint?.isStreaming && !requestUrl.includes('/stream')) {
+            requestUrl = requestUrl + '/stream';
+        } else if (!endpoint?.isStreaming && !requestUrl.includes('/chat')) {
+            requestUrl = requestUrl.replace(/\/$/, '') + '/chat/stream';
+        }
+        
+>>>>>>> Stashed changes
         
         const requestOptions = {
             method: endpoint?.method || 'POST',
@@ -346,7 +383,21 @@ export class ChatManager {
 
     async makeApiRequest(message) {
         const endpoint = this.endpointManager.activeEndpoint;
+<<<<<<< Updated upstream
         const requestUrl = endpoint?.url || 'http://localhost:8000/chat';
+=======
+        let requestUrl = endpoint?.url || 'http://localhost:8000/chat';
+        
+        // Debug logging
+        console.log('Active endpoint:', endpoint);
+        console.log('Request URL:', requestUrl);
+        
+        // Ensure we're using HTTP for localhost
+        if (requestUrl.startsWith('https://localhost')) {
+            requestUrl = requestUrl.replace('https://', 'http://');
+        }
+        
+>>>>>>> Stashed changes
         const requestOptions = {
             method: endpoint?.method || 'POST',
             headers: {
