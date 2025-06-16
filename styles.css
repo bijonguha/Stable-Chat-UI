@@ -160,11 +160,46 @@ body::before {
     box-shadow: 0 0 30px rgba(139, 92, 246, 0.2);
 }
 
+.endpoint-info {
+    position: relative;
+}
+
 .endpoint-info h3 {
     font-size: 0.95rem;
     font-weight: 500;
     margin-bottom: 0.25rem;
     color: #f3f4f6;
+}
+
+/* Response Time Display */
+.response-time-display {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    animation: fadeIn 0.3s ease-in-out;
+    background: linear-gradient(135deg, #0891b2, #0e7490);
+    color: white;
+    box-shadow: 0 2px 10px rgba(8, 145, 178, 0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Responsive adjustments for response time display */
+@media (max-width: 768px) {
+    .response-time-display {
+        margin-left: 6px;
+        padding: 3px 6px;
+        font-size: 0.6rem;
+    }
 }
 
 .endpoint-info p {
