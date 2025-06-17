@@ -102,6 +102,14 @@ export class EndpointManager {
             
             StorageManager.saveEndpoints(this.endpoints);
             this.render();
+            
+            // Notify ChatManager if the active endpoint was updated
+            if (this.editingEndpoint && this.activeEndpoint?.id === this.editingEndpoint.id) {
+                if (window.app && window.app.chatManager) {
+                    window.app.chatManager.refreshEndpoint();
+                }
+            }
+            
             this.closeModal();
         } catch (error) {
             alert(error.message);
@@ -135,6 +143,11 @@ export class EndpointManager {
     updateEndpoint(endpoint) {
         const index = this.endpoints.findIndex(e => e.id === this.editingEndpoint.id);
         this.endpoints[index] = endpoint;
+        
+        // If the updated endpoint is the active one, refresh the active endpoint reference
+        if (this.activeEndpoint?.id === endpoint.id) {
+            this.activeEndpoint = endpoint;
+        }
     }
 
     addEndpoint(endpoint) {
