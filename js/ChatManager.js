@@ -97,6 +97,13 @@ export class ChatManager {
         this.checkConnection();
     }
 
+    refreshEndpoint() {
+        // This method is called when an endpoint is updated
+        // It ensures ChatManager uses the latest endpoint configuration
+        console.log('🔄 Refreshing endpoint reference');
+        this.checkConnection();
+    }
+
     updateConversationIdDisplay() {
         if (this.conversationId) {
             this.conversationValueElement.textContent = this.conversationId;
@@ -152,9 +159,13 @@ export class ChatManager {
         const endpoint = this.endpointManager.activeEndpoint;
         const useStreaming = endpoint && endpoint.isStreaming;
         
+        console.log('🚀 SendMessage - UseStreaming:', useStreaming, 'Endpoint:', endpoint?.name);
+        
         if (useStreaming) {
+            console.log('📡 Using streaming mode');
             await this.sendStreamingMessage(message);
         } else {
+            console.log('📄 Using regular mode');
             await this.sendRegularMessage(message);
         }
     }
@@ -190,12 +201,17 @@ export class ChatManager {
     }
 
     async sendStreamingMessage(message) {
+        console.log('🌊 Starting streaming message');
         this.isStreaming = true;
         this.sendButton.disabled = true;
         this.sendButton.textContent = 'Streaming...';
         
         // Create the streaming message container
         this.currentStreamingMessage = this.createStreamingMessage();
+        console.log('📝 Created streaming message container:', this.currentStreamingMessage);
+        
+        // Initialize stream buffer
+        this.streamBuffer = '';
         
         // Track start time for streaming
         this.streamingStartTime = performance.now();
@@ -204,8 +220,10 @@ export class ChatManager {
         try {
             await this.makeStreamingRequest(message);
         } catch (error) {
+            console.error('❌ Streaming error:', error);
             this.handleStreamingError(error);
         } finally {
+            console.log('🏁 Finishing streaming');
             this.finishStreaming();
         }
     }
@@ -236,8 +254,8 @@ export class ChatManager {
         let requestUrl = endpoint?.url || 'http://localhost:8000/chat';
         
         // Debug logging
-        console.log('Streaming - Active endpoint:', endpoint);
-        console.log('Streaming - Request URL:', requestUrl);
+        console.log('🔗 Streaming - Active endpoint:', endpoint);
+        console.log('🔗 Streaming - Original URL:', requestUrl);
         
         // Ensure we're using HTTP for localhost
         if (requestUrl.startsWith('https://localhost')) {
@@ -250,6 +268,8 @@ export class ChatManager {
         } else if (!endpoint?.isStreaming && !requestUrl.includes('/chat')) {
             requestUrl = requestUrl.replace(/\/$/, '') + '/chat/stream';
         }
+        
+        console.log('🔗 Streaming - Final URL:', requestUrl);
         
         const requestOptions = {
             method: endpoint?.method || 'POST',
@@ -265,8 +285,12 @@ export class ChatManager {
                 stream: true
             })
         };
+        
+        console.log('📤 Request options:', requestOptions);
 
         const response = await fetch(requestUrl, requestOptions);
+        console.log('📥 Response status:', response.status, response.statusText);
+        console.log('📥 Response headers:', [...response.headers.entries()]);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -274,14 +298,30 @@ export class ChatManager {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        console.log('📖 Starting to read stream...');
 
         try {
+            let chunkCount = 0;
+            let totalData = '';
             while (true) {
                 const { done, value } = await reader.read();
                 
-                if (done) break;
+                if (done) {
+                    console.log('✅ Stream completed, total chunks:', chunkCount);
+                    console.log('📊 Total data received:', totalData.length, 'chars');
+                    // Process any remaining buffer content
+                    if (this.streamBuffer && this.streamBuffer.trim()) {
+                        console.log('📝 Processing final buffer:', this.streamBuffer);
+                        await this.processStreamChunk('\n'); // Force final processing
+                    }
+                    break;
+                }
                 
+                chunkCount++;
                 const chunk = decoder.decode(value, { stream: true });
+                totalData += chunk;
+                console.log(`📦 Chunk ${chunkCount} (${chunk.length} bytes):`, JSON.stringify(chunk));
+                console.log(`📦 Raw chunk ${chunkCount}:`, chunk);
                 await this.processStreamChunk(chunk);
             }
         } finally {
@@ -290,48 +330,91 @@ export class ChatManager {
     }
 
     async processStreamChunk(chunk) {
-        // Handle different streaming formats
-        const lines = chunk.split('\n');
+        console.log('🔄 Processing chunk:', chunk.length, 'bytes');
+        
+        // Initialize buffer if it doesn't exist
+        if (!this.streamBuffer) {
+            this.streamBuffer = '';
+        }
+        
+        // Add chunk to buffer
+        this.streamBuffer += chunk;
+        console.log('📝 Buffer now:', this.streamBuffer.length, 'bytes');
+        
+        // Process complete lines from buffer
+        const lines = this.streamBuffer.split('\n');
+        
+        // Keep the last potentially incomplete line in buffer
+        this.streamBuffer = lines.pop() || '';
+        console.log('📋 Processing', lines.length, 'lines, buffer remaining:', this.streamBuffer.length, 'bytes');
         
         for (const line of lines) {
             if (line.trim() === '') continue;
+            
+            console.log('🔍 Processing line:', line);
             
             try {
                 // Handle Server-Sent Events format
                 if (line.startsWith('data: ')) {
                     const data = line.slice(6);
+                    console.log('📡 SSE data:', data);
                     if (data === '[DONE]') {
+                        console.log('🏁 Stream done signal received');
                         return;
                     }
                     
                     const parsed = JSON.parse(data);
+                    console.log('✅ SSE parsed:', parsed);
                     this.appendStreamContent(parsed);
                 }
                 // Handle plain JSON streaming
                 else if (line.trim().startsWith('{')) {
                     const parsed = JSON.parse(line);
+                    console.log('✅ JSON parsed:', parsed);
                     this.appendStreamContent(parsed);
                 }
-                // Handle plain text streaming
+                // Handle plain text streaming - process immediately
                 else {
+                    console.log('📝 Plain text:', line);
                     this.appendStreamContent({ content: line });
                 }
             } catch (error) {
-                // If JSON parsing fails, treat as plain text
+                console.warn('⚠️ Parse error:', error.message, 'for line:', line);
+                // If JSON parsing fails, treat as plain text and process immediately
                 if (line.trim()) {
-                    this.appendStreamContent({ content: line });
+                    this.appendStreamContent({ content: line.trim() });
                 }
             }
+        }
+        
+        // Process any remaining buffer content if it looks like plain text
+        // This helps with streaming that doesn't use line breaks
+        if (this.streamBuffer.length > 0 && !this.streamBuffer.includes('{') && !this.streamBuffer.startsWith('data:')) {
+            // Check if buffer hasn't grown in the last few chunks (indicating end of stream chunk)
+            clearTimeout(this.bufferTimeout);
+            this.bufferTimeout = setTimeout(() => {
+                if (this.streamBuffer.trim()) {
+                    console.log('📝 Processing remaining buffer as text:', this.streamBuffer);
+                    this.appendStreamContent({ content: this.streamBuffer });
+                    this.streamBuffer = '';
+                }
+            }, 50); // Small delay to accumulate partial content
         }
     }
 
     appendStreamContent(data) {
-        if (!this.currentStreamingMessage) return;
+        console.log('➕ Appending stream content:', data);
+        
+        if (!this.currentStreamingMessage) {
+            console.error('❌ No current streaming message!');
+            return;
+        }
         
         // Record response time on first chunk received for streaming
         if (!this.streamingFirstResponseReceived && this.streamingStartTime) {
             const endTime = performance.now();
             const responseTime = endTime - this.streamingStartTime;
+            console.log('⏱️ First response time:', responseTime, 'ms');
             
             const endpoint = this.endpointManager.activeEndpoint;
             if (endpoint && endpoint.id) {
@@ -345,7 +428,32 @@ export class ChatManager {
         
         // Extract content from different response formats
         let content = '';
-        if (data.content) {
+        
+        // Handle FastAPI SSE backend response format
+        if (data.type === 'text_sql') {
+            console.log('🏗️ Text/SQL chunk:', data);
+            // For text_sql chunks, use the 'content' field (which is the main response)
+            content = data.content || '';
+            
+            // Optionally include SQL in a code block if present
+            if (data.sql && data.sql.trim()) {
+                content += '\n\n```sql\n' + data.sql + '\n```\n\n';
+            }
+        } else if (data.type === 'data') {
+            console.log('🏗️ Data chunk:', data);
+            // For data chunks, use the content field
+            content = data.content || '';
+        } else if (data.type === 'error') {
+            console.log('❌ Error chunk:', data);
+            content = data.content || `Error: ${data.error || 'Unknown error'}`;
+        }
+        // Handle stream end marker
+        else if (data.stream_end) {
+            console.log('🏁 Stream end marker received');
+            return; // Don't append content for stream end marker
+        }
+        // Handle standard formats (fallback)
+        else if (data.content) {
             content = data.content;
         } else if (data.response) {
             content = data.response;
@@ -357,21 +465,42 @@ export class ChatManager {
             content = data;
         }
         
+        console.log('📝 Extracted content:', content);
+        
         if (content) {
             this.currentStreamingMessage.content += content;
+            console.log('📄 Total content now:', this.currentStreamingMessage.content.length, 'chars');
             
-            // Update the message bubble with markdown parsing
-            const parsedContent = MarkdownParser.parse(this.currentStreamingMessage.content);
-            this.currentStreamingMessage.bubble.innerHTML = parsedContent + '<span class="streaming-cursor">▊</span>';
-            
-            this.scrollToBottom();
+            // For streaming, use immediate text append for better performance
+            // We'll parse markdown only at the end to avoid performance issues
+            this.updateStreamingDisplay();
         }
         
         // Update conversation ID if provided
         if (data.conversation_id && !this.conversationId) {
             this.conversationId = data.conversation_id;
             this.updateConversationIdDisplay();
+            console.log('🆔 Updated conversation ID:', this.conversationId);
         }
+    }
+
+    updateStreamingDisplay() {
+        if (!this.currentStreamingMessage) return;
+        
+        // Use a simplified display for streaming to avoid performance issues
+        // We'll escape HTML for safety but not do full markdown parsing until the end
+        const safeContent = this.escapeHtml(this.currentStreamingMessage.content);
+        
+        // Update display immediately for real-time streaming effect
+        this.currentStreamingMessage.bubble.innerHTML = 
+            safeContent.replace(/\n/g, '<br>') + '<span class="streaming-cursor">▊</span>';
+        this.scrollToBottom();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     finishStreaming() {
@@ -379,12 +508,22 @@ export class ChatManager {
         this.sendButton.disabled = false;
         this.sendButton.textContent = 'Send';
         
+        // Clear any pending buffer timeouts
+        if (this.bufferTimeout) {
+            clearTimeout(this.bufferTimeout);
+            this.bufferTimeout = null;
+        }
+        
         if (this.currentStreamingMessage) {
-            // Remove the cursor and finalize the message
+            // Remove the cursor and finalize the message with full markdown parsing
             const finalContent = MarkdownParser.parse(this.currentStreamingMessage.content);
             this.currentStreamingMessage.bubble.innerHTML = finalContent;
+            console.log('✅ Streaming finished, applied final markdown parsing');
             this.currentStreamingMessage = null;
         }
+        
+        // Clear stream buffer
+        this.streamBuffer = '';
         
         this.scrollToBottom();
     }
@@ -560,6 +699,7 @@ export class ChatManager {
         // Reset any streaming state
         this.isStreaming = false;
         this.currentStreamingMessage = null;
+        this.streamBuffer = '';
         this.sendButton.disabled = false;
         this.sendButton.textContent = 'Send';
         
