@@ -7,13 +7,41 @@ export class MarkdownParser {
         // Handle code blocks first to avoid processing markdown inside them
         text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
             const lang = language || 'text';
-            const escapedCode = this.escapeHtml(code.trim());
-            return `<div class="code-block">
+            const trimmedCode = code.trim();
+            const escapedCode = this.escapeHtml(trimmedCode);
+            
+            // Map common language aliases to Prism-supported languages
+            const languageMap = {
+                'sql': 'sql',
+                'python': 'python',
+                'py': 'python', 
+                'javascript': 'javascript',
+                'js': 'javascript',
+                'typescript': 'typescript',
+                'ts': 'typescript',
+                'json': 'json',
+                'bash': 'bash',
+                'shell': 'bash',
+                'yaml': 'yaml',
+                'yml': 'yaml',
+                'markdown': 'markdown',
+                'md': 'markdown',
+                'html': 'html',
+                'css': 'css',
+                'text': 'text'
+            };
+            
+            const prismLang = languageMap[lang.toLowerCase()] || 'text';
+            const languageClass = prismLang === 'text' ? '' : `language-${prismLang}`;
+            
+            return `<div class="code-block syntax-highlighted">
                 <div class="code-header">
-                    <span>${lang}</span>
-                    <button class="copy-btn" onclick="window.app.utils.copyCode(this, '${this.escapeForAttribute(code.trim())}')">Copy</button>
+                    <span class="language-label">${lang.toUpperCase()}</span>
+                    <button class="copy-btn" onclick="window.app.utils.copyCode(this, '${this.escapeForAttribute(code.trim())}')">
+                        📋 Copy
+                    </button>
                 </div>
-                <pre><code>${escapedCode}</code></pre>
+                <pre class="line-numbers"><code class="${languageClass}">${escapedCode}</code></pre>
             </div>`;
         });
 
@@ -67,13 +95,47 @@ export class MarkdownParser {
     }
 
     static escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+        // Note: We preserve line breaks and whitespace for code blocks
     }
 
     static escapeForAttribute(text) {
         return text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+    }
+    
+    /**
+     * Apply syntax highlighting to code blocks in the given element
+     * @param {HTMLElement} element - Element containing code blocks to highlight
+     */
+    static applySyntaxHighlighting(element) {
+        if (typeof Prism !== 'undefined') {
+            // Highlight all code blocks within the element
+            Prism.highlightAllUnder(element);
+        }
+    }
+    
+    /**
+     * Parse markdown and apply syntax highlighting
+     * @param {string} text - Markdown text to parse
+     * @param {HTMLElement} targetElement - Element where parsed content will be inserted
+     * @returns {string} - Parsed HTML
+     */
+    static parseAndHighlight(text, targetElement = null) {
+        const parsed = this.parse(text);
+        
+        // If target element is provided, apply highlighting after a short delay
+        if (targetElement && typeof Prism !== 'undefined') {
+            setTimeout(() => {
+                this.applySyntaxHighlighting(targetElement);
+            }, 10);
+        }
+        
+        return parsed;
     }
 }
 

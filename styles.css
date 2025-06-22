@@ -1391,3 +1391,228 @@ body::before {
         font-size: 0.8rem;
     }
 }
+
+/* ================================
+   SYNTAX HIGHLIGHTING STYLES
+   ================================ */
+
+/* Enhanced Code Block Styling */
+.code-block.syntax-highlighted {
+    margin: 1rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1e1e1e;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.code-block.syntax-highlighted .code-header {
+    background: linear-gradient(90deg, #2d3748, #1a202c);
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+    min-height: auto;
+}
+
+.code-block.syntax-highlighted .language-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.code-block.syntax-highlighted .copy-btn {
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #8b5cf6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: auto;
+    line-height: 1;
+}
+
+.code-block.syntax-highlighted .copy-btn:hover {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: rgba(139, 92, 246, 0.5);
+    transform: translateY(-1px);
+}
+
+.code-block.syntax-highlighted pre {
+    margin: 0;
+    padding: 1rem;
+    background: #1e1e1e;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.code-block.syntax-highlighted code {
+    color: #d4d4d4;
+    background: none;
+    padding: 0;
+    border-radius: 0;
+    font-family: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Prism.js Theme Overrides for Dark Theme */
+.code-block.syntax-highlighted .token.comment,
+.code-block.syntax-highlighted .token.prolog,
+.code-block.syntax-highlighted .token.doctype,
+.code-block.syntax-highlighted .token.cdata {
+    color: #6a9955;
+    font-style: italic;
+}
+
+.code-block.syntax-highlighted .token.punctuation {
+    color: #d4d4d4;
+}
+
+.code-block.syntax-highlighted .token.property,
+.code-block.syntax-highlighted .token.tag,
+.code-block.syntax-highlighted .token.constant,
+.code-block.syntax-highlighted .token.symbol,
+.code-block.syntax-highlighted .token.deleted {
+    color: #f44747;
+}
+
+.code-block.syntax-highlighted .token.boolean,
+.code-block.syntax-highlighted .token.number {
+    color: #b5cea8;
+}
+
+.code-block.syntax-highlighted .token.selector,
+.code-block.syntax-highlighted .token.attr-name,
+.code-block.syntax-highlighted .token.string,
+.code-block.syntax-highlighted .token.char,
+.code-block.syntax-highlighted .token.builtin,
+.code-block.syntax-highlighted .token.inserted {
+    color: #ce9178;
+}
+
+.code-block.syntax-highlighted .token.operator,
+.code-block.syntax-highlighted .token.entity,
+.code-block.syntax-highlighted .token.url,
+.code-block.syntax-highlighted .language-css .token.string,
+.code-block.syntax-highlighted .style .token.string {
+    color: #d4d4d4;
+}
+
+.code-block.syntax-highlighted .token.atrule,
+.code-block.syntax-highlighted .token.attr-value,
+.code-block.syntax-highlighted .token.keyword {
+    color: #569cd6;
+}
+
+.code-block.syntax-highlighted .token.function,
+.code-block.syntax-highlighted .token.class-name {
+    color: #dcdcaa;
+}
+
+.code-block.syntax-highlighted .token.regex,
+.code-block.syntax-highlighted .token.important,
+.code-block.syntax-highlighted .token.variable {
+    color: #d16969;
+}
+
+/* SQL-specific highlighting */
+.code-block.syntax-highlighted .token.sql-keyword {
+    color: #569cd6;
+    font-weight: bold;
+}
+
+.code-block.syntax-highlighted .token.sql-function {
+    color: #dcdcaa;
+}
+
+.code-block.syntax-highlighted .token.sql-string {
+    color: #ce9178;
+}
+
+.code-block.syntax-highlighted .token.sql-number {
+    color: #b5cea8;
+}
+
+/* Line Numbers Styling */
+.code-block.syntax-highlighted .line-numbers {
+    position: relative;
+    padding-left: 3em;
+}
+
+.code-block.syntax-highlighted .line-numbers-rows {
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 3em;
+    letter-spacing: -1px;
+    border-right: 1px solid rgba(75, 85, 99, 0.3);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.code-block.syntax-highlighted .line-numbers-rows > span {
+    display: block;
+    counter-increment: linenumber;
+    color: #6b7280;
+    font-size: 0.75rem;
+    padding-right: 0.5rem;
+    text-align: right;
+}
+
+.code-block.syntax-highlighted .line-numbers-rows > span:before {
+    content: counter(linenumber);
+}
+
+/* Scrollbar for code blocks */
+.code-block.syntax-highlighted pre::-webkit-scrollbar {
+    height: 8px;
+}
+
+.code-block.syntax-highlighted pre::-webkit-scrollbar-track {
+    background: rgba(55, 65, 81, 0.3);
+    border-radius: 4px;
+}
+
+.code-block.syntax-highlighted pre::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.5);
+    border-radius: 4px;
+}
+
+.code-block.syntax-highlighted pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.7);
+}
+
+/* Animation for syntax highlighting */
+.code-block.syntax-highlighted {
+    animation: fadeInCode 0.3s ease-in-out;
+}
+
+@keyframes fadeInCode {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

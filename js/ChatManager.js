@@ -512,10 +512,10 @@ export class ChatManager {
         }
         
         if (this.currentStreamingMessage) {
-            // Remove the cursor and finalize the message with full markdown parsing
-            const finalContent = MarkdownParser.parse(this.currentStreamingMessage.content);
+            // Remove the cursor and finalize the message with full markdown parsing and syntax highlighting
+            const finalContent = MarkdownParser.parseAndHighlight(this.currentStreamingMessage.content, this.currentStreamingMessage.bubble);
             this.currentStreamingMessage.bubble.innerHTML = finalContent;
-            console.log('✅ Streaming finished, applied final markdown parsing');
+            console.log('✅ Streaming finished, applied final markdown parsing with syntax highlighting');
             this.currentStreamingMessage = null;
         }
         
@@ -621,7 +621,7 @@ export class ChatManager {
         
         // Parse markdown for assistant messages, keep plain text for user messages
         if (role === 'assistant' && !isError) {
-            bubbleElement.innerHTML = MarkdownParser.parse(text);
+            bubbleElement.innerHTML = MarkdownParser.parseAndHighlight(text, bubbleElement);
         } else {
             bubbleElement.textContent = text;
         }
