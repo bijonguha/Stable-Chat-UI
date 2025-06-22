@@ -432,13 +432,10 @@ export class ChatManager {
         // Handle FastAPI SSE backend response format
         if (data.type === 'text_sql') {
             console.log('🏗️ Text/SQL chunk:', data);
-            // For text_sql chunks, use the 'content' field (which is the main response)
+            // For text_sql chunks, use the 'content' field (which already contains formatted SQL)
             content = data.content || '';
             
-            // Optionally include SQL in a code block if present
-            if (data.sql && data.sql.trim()) {
-                content += '\n\n```sql\n' + data.sql + '\n```\n\n';
-            }
+            // SQL is already included in the content field from backend - no need to append again
         } else if (data.type === 'data') {
             console.log('🏗️ Data chunk:', data);
             // For data chunks, use the content field
