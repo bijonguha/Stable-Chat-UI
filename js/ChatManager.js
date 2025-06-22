@@ -432,13 +432,10 @@ export class ChatManager {
         // Handle FastAPI SSE backend response format
         if (data.type === 'text_sql') {
             console.log('🏗️ Text/SQL chunk:', data);
-            // For text_sql chunks, use the 'content' field (which is the main response)
+            // For text_sql chunks, use the 'content' field (which already contains formatted SQL)
             content = data.content || '';
             
-            // Optionally include SQL in a code block if present
-            if (data.sql && data.sql.trim()) {
-                content += '\n\n```sql\n' + data.sql + '\n```\n\n';
-            }
+            // SQL is already included in the content field from backend - no need to append again
         } else if (data.type === 'data') {
             console.log('🏗️ Data chunk:', data);
             // For data chunks, use the content field
@@ -515,10 +512,10 @@ export class ChatManager {
         }
         
         if (this.currentStreamingMessage) {
-            // Remove the cursor and finalize the message with full markdown parsing
-            const finalContent = MarkdownParser.parse(this.currentStreamingMessage.content);
+            // Remove the cursor and finalize the message with full markdown parsing and syntax highlighting
+            const finalContent = MarkdownParser.parseAndHighlight(this.currentStreamingMessage.content, this.currentStreamingMessage.bubble);
             this.currentStreamingMessage.bubble.innerHTML = finalContent;
-            console.log('✅ Streaming finished, applied final markdown parsing');
+            console.log('✅ Streaming finished, applied final markdown parsing with syntax highlighting');
             this.currentStreamingMessage = null;
         }
         
@@ -624,7 +621,7 @@ export class ChatManager {
         
         // Parse markdown for assistant messages, keep plain text for user messages
         if (role === 'assistant' && !isError) {
-            bubbleElement.innerHTML = MarkdownParser.parse(text);
+            bubbleElement.innerHTML = MarkdownParser.parseAndHighlight(text, bubbleElement);
         } else {
             bubbleElement.textContent = text;
         }
