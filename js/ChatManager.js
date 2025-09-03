@@ -276,12 +276,13 @@ export class ChatManager {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'text/event-stream',
-                ...(endpoint?.headers || {})
+                ...(endpoint?.headers || {}),
+                ...this.getAuthHeaders(endpoint)
             },
             body: JSON.stringify({
-                messages: [{ role: "user", text: message }],
+                messages: { role: "user", text: message },
                 model: endpoint?.model || "custom-notset",
-                conversation_id: this.conversationId,
+                ...(this.conversationId && { thread_id: this.conversationId }),
                 stream: true
             })
         };
@@ -560,15 +561,19 @@ export class ChatManager {
             method: endpoint?.method || 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                ...(endpoint?.headers || {})
+                ...(endpoint?.headers || {}),
+                ...this.getAuthHeaders(endpoint)
             }
         };
         
         const requestBody = {
-            messages: [{ role: "user", text: message }],
-            model: endpoint?.model || "custom-notset",
-            conversation_id: this.conversationId
+            messages: { role: "user", text: message },
+            model: endpoint?.model || "custom-notset"
         };
+        
+        if (this.conversationId) {
+            requestBody.thread_id = this.conversationId;
+        }
         
         if (requestOptions.method !== 'GET') {
             requestOptions.body = JSON.stringify(requestBody);
@@ -577,15 +582,29 @@ export class ChatManager {
         const response = await fetch(requestUrl, requestOptions);
         
         if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error(`Authentication failed (401): Please check your JWT token. ${response.statusText}`);
+            }
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         return await response.json();
     }
 
+    getAuthHeaders(endpoint) {
+        const authHeaders = {};
+        
+        if (endpoint && endpoint.auth && endpoint.auth.enabled && endpoint.auth.token) {
+            // JWT Bearer token authentication
+            authHeaders['Authorization'] = `Bearer ${endpoint.auth.token}`;
+        }
+        
+        return authHeaders;
+    }
+
     handleApiResponse(data) {
-        if (!this.conversationId && data.conversation_id) {
-            this.conversationId = data.conversation_id;
+        if (!this.conversationId && data.thread_id) {
+            this.conversationId = data.thread_id;
             this.updateConversationIdDisplay();
         }
         

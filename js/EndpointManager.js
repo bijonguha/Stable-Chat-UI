@@ -31,6 +31,11 @@ export class EndpointManager {
         this.cancelBtn.addEventListener('click', () => this.closeModal());
         this.endpointForm.addEventListener('submit', (e) => this.saveEndpoint(e));
         
+        // Auth toggle event listener
+        document.getElementById('auth-toggle').addEventListener('change', (e) => {
+            this.toggleAuthFields(e.target.checked);
+        });
+        
         this.endpointModal.addEventListener('click', (e) => {
             if (e.target === this.endpointModal) {
                 this.closeModal();
@@ -69,6 +74,12 @@ export class EndpointManager {
         this.endpointModal.classList.remove('show');
         this.editingEndpoint = null;
         this.endpointForm.reset();
+        this.toggleAuthFields(false); // Hide auth fields on close
+    }
+
+    toggleAuthFields(show) {
+        const authFields = document.getElementById('auth-fields');
+        authFields.style.display = show ? 'block' : 'none';
     }
 
     populateForm(endpoint) {
@@ -78,6 +89,14 @@ export class EndpointManager {
         document.getElementById('endpoint-headers').value = JSON.stringify(endpoint.headers, null, 2);
         document.getElementById('endpoint-model').value = endpoint.model || '';
         document.getElementById('streaming-toggle').checked = endpoint.isStreaming || false;
+        
+        // Populate authentication fields
+        const auth = endpoint.auth || { enabled: false, token: '' };
+        document.getElementById('auth-toggle').checked = auth.enabled || false;
+        document.getElementById('auth-token').value = auth.token || '';
+        
+        // Show/hide auth fields based on state
+        this.toggleAuthFields(auth.enabled || false);
     }
 
     resetForm() {
@@ -85,6 +104,13 @@ export class EndpointManager {
         document.getElementById('endpoint-headers').value = '{\n  "Content-Type": "application/json"\n}';
         document.getElementById('endpoint-model').value = '';
         document.getElementById('streaming-toggle').checked = false;
+        
+        // Reset authentication fields
+        document.getElementById('auth-toggle').checked = false;
+        document.getElementById('auth-token').value = '';
+        
+        // Hide auth fields
+        this.toggleAuthFields(false);
     }
 
     saveEndpoint(e) {
@@ -124,13 +150,34 @@ export class EndpointManager {
         const model = document.getElementById('endpoint-model').value.trim();
         const isStreaming = document.getElementById('streaming-toggle').checked;
         
+        // Authentication data
+        const authEnabled = document.getElementById('auth-toggle').checked;
+        const authToken = document.getElementById('auth-token').value.trim();
+        
         if (!name || !url) {
             throw new Error('Name and URL are required!');
         }
         
+        if (authEnabled && !authToken) {
+            throw new Error('Authentication token is required when authentication is enabled!');
+        }
+        
+        if (authEnabled && authToken) {
+            // Basic JWT format validation
+            const jwtParts = authToken.split('.');
+            if (jwtParts.length !== 3) {
+                throw new Error('Invalid JWT token format! Token must have 3 parts separated by dots.');
+            }
+        }
+        
         const headers = headersText ? Utils.validateJsonString(headersText) : {};
         
-        return { name, url, method, headers, model, isStreaming };
+        const auth = {
+            enabled: authEnabled,
+            token: authToken
+        };
+        
+        return { name, url, method, headers, model, isStreaming, auth };
     }
 
     createEndpoint(formData) {
@@ -189,6 +236,9 @@ export class EndpointManager {
         const streamingBadge = endpoint.isStreaming ?
             '<span class="streaming-badge"><span class="badge-icon">⚡</span>STREAMING</span>' :
             '<span class="regular-badge"><span class="badge-icon">✓</span>REGULAR</span>';
+            
+        const authBadge = (endpoint.auth && endpoint.auth.enabled) ?
+            '<span class="auth-badge"><span class="badge-icon">🔐</span>AUTH</span>' : '';
         
         // Get average response time for this endpoint
         const avgResponseTime = StorageManager.getAverageResponseTime(endpoint.id);
@@ -203,7 +253,7 @@ export class EndpointManager {
         
         endpointElement.innerHTML = `
             <div class="endpoint-info">
-                <h3>${endpoint.name}${streamingBadge}${responseTimeDisplay}</h3>
+                <h3>${endpoint.name}${streamingBadge}${authBadge}${responseTimeDisplay}</h3>
                 <p>${endpoint.url}</p>
             </div>
             <div class="endpoint-actions">
