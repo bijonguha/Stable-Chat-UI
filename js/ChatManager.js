@@ -368,6 +368,13 @@ export class ChatManager {
                     console.log('✅ SSE parsed:', parsed);
                     this.appendStreamContent(parsed);
                 }
+                // Handle SSE event lines (ignore them - they're metadata)
+                else if (line.startsWith('event: ')) {
+                    const eventType = line.slice(7);
+                    console.log('📋 SSE event type:', eventType);
+                    // Don't display event type lines - they're SSE metadata
+                    continue;
+                }
                 // Handle plain JSON streaming
                 else if (line.trim().startsWith('{')) {
                     const parsed = JSON.parse(line);
