@@ -134,10 +134,19 @@
                 <textarea 
                     id="chat-input" 
                     class="chat-input" 
-                    placeholder="Type your message..." 
+                    placeholder="Type your message or use voice..." 
                     rows="1"
                 ></textarea>
+                <button id="voice-btn" class="voice-btn" title="Voice Input">
+                    <span class="voice-icon">🎤</span>
+                </button>
                 <button id="send-btn" class="send-btn">Send</button>
+            </div>
+            <div class="voice-status" id="voice-status" style="display: none;">
+                <div class="voice-indicator">
+                    <div class="voice-dot"></div>
+                    <span class="voice-text">Listening...</span>
+                </div>
             </div>
         </div>
     </div>

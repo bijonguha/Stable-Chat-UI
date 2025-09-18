@@ -1,6 +1,7 @@
 import { MarkdownParser } from './MarkdownParser.js';
 import { Utils } from './Utils.js';
 import { StorageManager } from './StorageManager.js';
+import { VoiceManager } from './VoiceManager.js';
 
 /**
  * ChatManager Module
@@ -15,8 +16,13 @@ export class ChatManager {
         this.isStreaming = false;
         this.currentStreamingMessage = null;
         
+        // Voice input properties
+        this.voiceManager = new VoiceManager();
+        this.isVoiceRecording = false;
+        
         this.initElements();
         this.initEventListeners();
+        this.initVoiceInput();
         this.checkConnection();
     }
 
@@ -32,6 +38,11 @@ export class ChatManager {
         this.conversationValueElement = document.getElementById('conversation-value');
         this.newChatBtn = document.getElementById('new-chat-btn');
         this.resizeHandle = document.getElementById('resize-handle');
+        
+        // Voice input elements
+        this.voiceButton = document.getElementById('voice-btn');
+        this.voiceStatus = document.getElementById('voice-status');
+        this.voiceText = document.querySelector('.voice-text');
     }
 
     initEventListeners() {
@@ -44,6 +55,163 @@ export class ChatManager {
         this.sendButton.addEventListener('click', () => this.sendMessage());
         
         this.initResizeHandling();
+    }
+
+    initVoiceInput() {
+        // Check if voice input is supported
+        if (!this.voiceManager.isSupported) {
+            console.warn('Voice input not supported');
+            if (this.voiceButton) {
+                this.voiceButton.disabled = true;
+                this.voiceButton.title = 'Voice input not supported in this browser';
+                this.voiceButton.style.opacity = '0.3';
+            }
+            return;
+        }
+
+        // Voice button click handler
+        if (this.voiceButton) {
+            this.voiceButton.addEventListener('click', () => this.toggleVoiceInput());
+        }
+
+        // Set up voice manager callbacks
+        this.voiceManager.onStart = () => {
+            console.log('🎤 Voice recording started');
+            this.isVoiceRecording = true;
+            this.updateVoiceUI();
+        };
+
+        this.voiceManager.onResult = (result) => {
+            console.log('🗣️ Voice result received:', result);
+            this.handleVoiceResult(result);
+        };
+
+        this.voiceManager.onEnd = () => {
+            console.log('🏁 Voice recording ended');
+            this.isVoiceRecording = false;
+            this.updateVoiceUI();
+        };
+
+        this.voiceManager.onError = (error) => {
+            console.error('❌ Voice error:', error);
+            this.handleVoiceError(error);
+            this.isVoiceRecording = false;
+            this.updateVoiceUI();
+        };
+    }
+
+    toggleVoiceInput() {
+        if (!this.voiceManager.isSupported) {
+            this.showVoiceError('Voice input is not supported in this browser.');
+            return;
+        }
+
+        if (this.isVoiceRecording) {
+            this.stopVoiceInput();
+        } else {
+            this.startVoiceInput();
+        }
+    }
+
+    startVoiceInput() {
+        if (this.isTyping || this.isStreaming) {
+            this.showVoiceError('Please wait for the current operation to complete.');
+            return;
+        }
+
+        const success = this.voiceManager.startListening();
+        if (!success) {
+            this.showVoiceError('Failed to start voice input. Please try again.');
+        }
+    }
+
+    stopVoiceInput() {
+        this.voiceManager.stopListening();
+    }
+
+    handleVoiceResult(result) {
+        // Update the input field with the transcript
+        if (result.finalTranscript) {
+            // Final transcript - replace any existing text
+            this.chatInput.value = result.finalTranscript;
+            this.autoResizeInput();
+            
+            // Auto-send if the transcript seems complete (ends with punctuation)
+            if (this.shouldAutoSendVoiceMessage(result.finalTranscript)) {
+                setTimeout(() => {
+                    if (!this.isVoiceRecording) {
+                        this.sendMessage();
+                    }
+                }, 500); // Small delay to ensure voice recording has stopped
+            }
+        } else if (result.interimTranscript) {
+            // Interim transcript - show preview
+            this.chatInput.value = result.interimTranscript;
+            this.autoResizeInput();
+        }
+    }
+
+    shouldAutoSendVoiceMessage(transcript) {
+        // Auto-send if transcript ends with sentence-ending punctuation
+        const trimmed = transcript.trim();
+        return /[.!?]$/.test(trimmed) && trimmed.length > 3;
+    }
+
+    handleVoiceError(error) {
+        console.error('Voice input error:', error);
+        
+        let errorMessage = error.message || 'Voice input error occurred.';
+        
+        // Show user-friendly error messages
+        if (error.error === 'not-allowed') {
+            errorMessage = 'Microphone access denied. Please allow microphone access and try again.';
+        } else if (error.error === 'no-speech') {
+            errorMessage = 'No speech detected. Please try speaking again.';
+        } else if (error.error === 'audio-capture') {
+            errorMessage = 'Microphone not found. Please check your microphone connection.';
+        }
+        
+        this.showVoiceError(errorMessage);
+    }
+
+    showVoiceError(message) {
+        // Show error in voice status area temporarily
+        if (this.voiceStatus && this.voiceText) {
+            this.voiceStatus.style.display = 'block';
+            this.voiceStatus.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+            this.voiceStatus.style.color = '#ef4444';
+            this.voiceText.textContent = message;
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                this.voiceStatus.style.display = 'none';
+                this.voiceStatus.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                this.voiceStatus.style.color = '#22c55e';
+                this.voiceText.textContent = 'Listening...';
+            }, 3000);
+        }
+    }
+
+    updateVoiceUI() {
+        if (!this.voiceButton) return;
+        
+        if (this.isVoiceRecording) {
+            // Recording state
+            this.voiceButton.classList.add('recording');
+            this.voiceButton.title = 'Stop voice input';
+            this.voiceStatus.style.display = 'block';
+            
+            // Disable send button while recording
+            this.sendButton.disabled = true;
+        } else {
+            // Idle state
+            this.voiceButton.classList.remove('recording');
+            this.voiceButton.title = 'Voice input';
+            this.voiceStatus.style.display = 'none';
+            
+            // Re-enable send button
+            this.sendButton.disabled = false;
+        }
     }
 
     autoResizeInput() {
@@ -655,6 +823,16 @@ export class ChatManager {
         if (isError) {
             bubbleElement.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
             bubbleElement.style.color = 'white';
+            bubbleElement.style.padding = '0.75rem';
+            bubbleElement.style.borderRadius = '12px';
+            bubbleElement.style.fontWeight = '500';
+            bubbleElement.style.wordWrap = 'break-word';
+            bubbleElement.style.whiteSpace = 'pre-wrap';
+            
+            // Ensure error text is always visible and properly formatted
+            if (!text || text.trim() === '') {
+                bubbleElement.textContent = 'An error occurred. Please try again.';
+            }
         }
         
         const timeElement = document.createElement('div');
