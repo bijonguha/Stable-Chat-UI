@@ -540,6 +540,8 @@ export class ChatManager {
                 else if (line.startsWith('event: ')) {
                     const eventType = line.slice(7);
                     console.log('📋 SSE event type:', eventType);
+                    // Track last SSE event type for downstream parsing hints
+                    this.lastSseEventType = eventType;
                     // Don't display event type lines - they're SSE metadata
                     continue;
                 }
@@ -585,7 +587,13 @@ export class ChatManager {
             console.error('❌ No current streaming message!');
             return;
         }
-        
+
+        // Capture/refresh thread/conversation ID ASAP (before any early returns)
+        this.updateThreadIdFromPayload(data, this.lastSseEventType);
+        if (data && typeof data.content === 'string') {
+            this.updateThreadIdFromPayload(data.content, this.lastSseEventType);
+        }
+
         // Record response time on first chunk received for streaming
         if (!this.streamingFirstResponseReceived && this.streamingStartTime) {
             const endTime = performance.now();
@@ -649,12 +657,8 @@ export class ChatManager {
             this.updateStreamingDisplay();
         }
         
-        // Update conversation ID if provided
-        if (data.conversation_id && !this.conversationId) {
-            this.conversationId = data.conversation_id;
-            this.updateConversationIdDisplay();
-            console.log('🆔 Updated conversation ID:', this.conversationId);
-        }
+        // Update thread/conversation ID if provided in any known shape
+        // (Thread/conversation ID is now captured early in appendStreamContent to avoid missing IDs on stream_end)
     }
 
     updateStreamingDisplay() {
@@ -775,6 +779,68 @@ export class ChatManager {
         }
         
         return authHeaders;
+    }
+
+    // Thread/conversation id extraction helpers
+    updateThreadIdFromPayload(payload, eventType) {
+        try {
+            const id = this.extractThreadId(payload, eventType);
+            if (id && this.conversationId !== id) {
+                this.conversationId = id;
+                this.updateConversationIdDisplay();
+                console.log('🆔 Updated thread/conversation ID (helper):', this.conversationId);
+            }
+        } catch (e) {
+            // Ignore extraction errors to avoid breaking streaming UI
+        }
+    }
+
+    extractThreadId(payload, eventType) {
+        const isLikelyId = (val) => {
+            if (typeof val !== 'string' || !val.trim()) return false;
+            if (val.startsWith('thread_')) return true;
+            if (/^[0-9a-fA-F-]{16,}$/.test(val)) return true; // UUID-like
+            if (val.length >= 12 && /[A-Za-z0-9_-]/.test(val)) return true;
+            return false;
+        };
+
+        // Object payloads (parsed JSON from SSE data)
+        if (payload && typeof payload === 'object') {
+            const candidates = [
+                payload.thread_id,
+                payload.conversation_id,
+                payload?.thread?.id,
+                payload?.thread?.thread_id,
+                payload?.message?.thread_id,
+                payload?.meta?.thread_id,
+                payload?.meta?.conversation_id,
+                payload?.data?.thread_id,
+            ].filter(Boolean);
+            const found = candidates.find(isLikelyId);
+            if (found) return found;
+        }
+
+        // String payloads (plain-text SSE lines)
+        if (typeof payload === 'string') {
+            // thread_id: "..."
+            const m1 = payload.match(/\bthread[_\s-]?id\b[\s:=\-\\>]*["']?([A-Za-z0-9_\-]{8,})["']?/i);
+            if (m1 && isLikelyId(m1[1])) return m1[1];
+
+            // conversation_id: "..."
+            const m2 = payload.match(/\bconversation[_\s-]?id\b[\s:=\-\\>]*["']?([A-Za-z0-9_\-]{8,})["']?/i);
+            if (m2 && isLikelyId(m2[1])) return m2[1];
+
+            // thread_... pattern
+            const m3 = payload.match(/\bthread_[A-Za-z0-9_\-]{4,}\b/);
+            if (m3 && isLikelyId(m3[0])) return m3[0];
+        }
+
+        // If the SSE event name suggests thread metadata and an id field exists
+        if (eventType && typeof payload === 'object' && /thread/i.test(eventType) && isLikelyId(payload?.id)) {
+            return payload.id;
+        }
+
+        return null;
     }
 
     handleApiResponse(data) {
