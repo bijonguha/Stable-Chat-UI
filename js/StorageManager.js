@@ -41,7 +41,11 @@ export class StorageManager {
             headers: { 'Content-Type': 'application/json' },
             model: 'custom-notset',
             isDefault: true,
-            isStreaming: false
+            isStreaming: false,
+            auth: {
+                enabled: false,
+                token: ''
+            }
         };
     }
 
