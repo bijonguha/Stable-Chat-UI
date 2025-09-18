@@ -970,6 +970,14 @@ export class ChatManager {
         this.sendButton.disabled = false;
         this.sendButton.textContent = 'Send';
         
+        // Reset response-time stats for the active endpoint so Avg TTFB starts at 0.0s
+        const activeEndpoint = this.endpointManager?.activeEndpoint;
+        if (activeEndpoint && activeEndpoint.id) {
+            StorageManager.clearResponseTimesForEndpoint(activeEndpoint.id);
+            // Re-render endpoint cards to reflect the reset (will show 0.0s)
+            this.endpointManager.render();
+        }
+        
         // Focus on input
         this.chatInput.focus();
         
