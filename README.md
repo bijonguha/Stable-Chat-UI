@@ -74,6 +74,7 @@ Stable Chat UI follows **DeepChat development standards** and is designed to wor
 
 ### Request Format
 
+**Regular API Requests:**
 ```json
 {
   "messages": {
@@ -81,12 +82,21 @@ Stable Chat UI follows **DeepChat development standards** and is designed to wor
     "text": "Your message here"
   },
   "model": "custom-notset",
-  "thread_id": "optional-conversation-id",
-  "stream": true
+  "thread_id": "optional-conversation-id"
 }
 ```
 
-**Note**: The messages field now uses a single object instead of an array, and conversation tracking uses `thread_id` instead of `conversation_id`.
+**Streaming API Requests:**
+```json
+{
+  "message": {
+    "role": "user",
+    "content": "Your message here"
+  }
+}
+```
+
+**Note**: Regular requests use `messages` with `text` field, while streaming requests use `message` with `content` field. Conversation tracking uses `thread_id`.
 
 ### Response Format
 
@@ -99,11 +109,21 @@ For regular (non-streaming) responses:
 }
 ```
 
-For streaming responses, the application supports multiple formats:
-- **Server-Sent Events (SSE)**: `data: {"content": "text", "type": "data"}`
-- **Line-delimited JSON**: `{"content": "text", "type": "data"}`
-- **Plain text streaming**: Direct text chunks
-- **FastAPI SSE format**: `{"content": "text", "type": "text_sql"}` for formatted content
+For streaming responses, the application supports Server-Sent Events (SSE) with the following event types:
+
+- **`routing_info`**: `data: {"content": "routing information"}`
+- **`tool_use`**: `data: {"metadata": {"tool": "tool_name"}}`
+- **`text`**: `data: {"text": "streaming text content"}`
+- **`completion_info`**: `data: {"metadata": {"processing_time_seconds": 1.23}}`
+
+Each event follows the SSE format:
+```
+event: text
+data: {"text": "partial response"}
+
+event: completion_info
+data: {"metadata": {"processing_time_seconds": 1.23}}
+```
 
 ### CORS Configuration
 
