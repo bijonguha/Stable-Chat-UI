@@ -12,23 +12,8 @@ export class MarkdownParser {
             
             // Map common language aliases to Prism-supported languages
             const languageMap = {
-                'sql': 'sql',
-                'python': 'python',
-                'py': 'python', 
-                'javascript': 'javascript',
-                'js': 'javascript',
-                'typescript': 'typescript',
-                'ts': 'typescript',
-                'json': 'json',
-                'bash': 'bash',
-                'shell': 'bash',
-                'yaml': 'yaml',
-                'yml': 'yaml',
-                'markdown': 'markdown',
-                'md': 'markdown',
-                'html': 'html',
-                'css': 'css',
-                'text': 'text'
+                 'sql': 'sql',
+                 'text': 'text'
             };
             
             const prismLang = languageMap[lang.toLowerCase()] || 'text';
@@ -73,23 +58,34 @@ export class MarkdownParser {
 
         // Handle unordered lists
         text = text.replace(/^[\*\-\+] (.*)$/gm, '<li>$1</li>');
-        text = text.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+        text = text.replace(/(<li>.*<\/li>(\n)?)+/gs, '<ul>$1</ul>');
 
         // Handle ordered lists
         text = text.replace(/^\d+\. (.*)$/gm, '<li>$1</li>');
 
-        // Handle line breaks and paragraphs
-        text = text.replace(/\n\n/g, '</p><p>');
+        // Handle special sections (like "Data:", "💾 Fetching", etc.)
+        text = text.replace(/^(💾.*?)$/gm, '<div class="data-section">$1</div>');
+        text = text.replace(/^(⚙️.*?)$/gm, '<div class="data-section">$1</div>');
+        text = text.replace(/^(Data:)$/gm, '<h4 class="data-header">$1</h4>');
+        text = text.replace(/^(Data Results.*?)$/gm, '<div class="data-results">$1</div>');
+        
+        // Handle bullet points and formatted data
+        text = text.replace(/^[\s]*[•\*]\s*(.*)$/gm, '<div class="data-item">• $1</div>');
+
+        // Convert to HTML - preserve double newlines as paragraph breaks
+        text = text.replace(/\n\n+/g, '</p><p>');
         text = text.replace(/\n/g, '<br>');
 
-        // Wrap in paragraph tags if not already wrapped
-        if (!text.startsWith('<')) {
+        // Wrap in paragraph tags if not already wrapped and doesn't contain block elements
+        if (!text.startsWith('<') && !text.includes('<div') && !text.includes('<h')) {
             text = '<p>' + text + '</p>';
         }
 
         // Clean up empty paragraphs
         text = text.replace(/<p><\/p>/g, '');
         text = text.replace(/<p><br><\/p>/g, '');
+        text = text.replace(/<p>(<div|<h)/g, '$1');
+        text = text.replace(/(<\/div>|<\/h[1-6]>)<\/p>/g, '$1');
 
         return text;
     }

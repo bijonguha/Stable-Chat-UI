@@ -163,10 +163,35 @@ export class EndpointManager {
         }
         
         if (authEnabled && authToken) {
-            // Basic JWT format validation
+            // Enhanced JWT format validation for MyDining API
             const jwtParts = authToken.split('.');
             if (jwtParts.length !== 3) {
                 throw new Error('Invalid JWT token format! Token must have 3 parts separated by dots.');
+            }
+            
+            try {
+                // Validate JWT structure and required claims
+                JSON.parse(atob(jwtParts[0])); // Validate header format
+                const payload = JSON.parse(atob(jwtParts[1]));
+                
+                // Check for required claims as per MyDining contract
+                const requiredClaims = ['userId', 'sub', 'corporateAccountId'];
+                const missingClaims = requiredClaims.filter(claim => !payload[claim]);
+                
+                if (missingClaims.length > 0) {
+                    throw new Error(`JWT token missing required claims: ${missingClaims.join(', ')}`);
+                }
+                
+                // Check if token is expired
+                if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+                    throw new Error('JWT token has expired. Please refresh your token.');
+                }
+                
+            } catch (e) {
+                if (e.message.includes('JWT token')) {
+                    throw e; // Re-throw our custom validation errors
+                }
+                throw new Error('Invalid JWT token format! Unable to decode token structure.');
             }
         }
         

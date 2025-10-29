@@ -35,13 +35,12 @@ export class StorageManager {
     static getDefaultEndpoint() {
         return {
             id: 'default',
-            name: 'Local Server',
-            url: 'http://localhost:8000/chat',
+            name: 'Local Chat Server',
+            url: 'http://localhost:8000',
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            model: 'custom-notset',
             isDefault: true,
-            isStreaming: false,
+            isStreaming: true,
             auth: {
                 enabled: false,
                 token: ''
