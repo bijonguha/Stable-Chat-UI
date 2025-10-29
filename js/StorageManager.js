@@ -57,6 +57,14 @@ export class StorageManager {
         localStorage.setItem(this.KEYS.RESPONSE_TIMES, JSON.stringify(stats));
     }
 
+    static clearResponseTimesForEndpoint(endpointId) {
+        const stats = this.loadResponseTimeStats();
+        if (stats && stats[endpointId]) {
+            delete stats[endpointId];
+            this.saveResponseTimeStats(stats);
+        }
+    }
+
     static recordResponseTime(endpointId, responseTime) {
         const stats = this.loadResponseTimeStats();
         

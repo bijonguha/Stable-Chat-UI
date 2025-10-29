@@ -218,7 +218,6 @@ export class ChatManager {
         const contentContainer = messageElement.querySelector('.content');
         let thinkingStepsShown = false;
         
-        // Show typing indicator initially
         contentContainer.innerHTML = '<div class="stream-typing-indicator">🤖 Analyzing your request...</div>';
 
         try {
@@ -276,21 +275,16 @@ export class ChatManager {
                 try {
                     const data = JSON.parse(dataStr);
                     
-                    // Handle MyDining API format
                     if (data.type === 'id') {
-                        // Message ID event - store for reference
                         this.currentMessageId = data.value;
                     } else if (data.type === 'done') {
-                        // Completion event
                         if (data.thread_id) {
                             this.threadId = data.thread_id;
                             this.updateThreadIdDisplay();
                         }
-                        // Finalize content with markdown parsing
                         const finalRawText = containers.contentContainer.getAttribute('data-raw-text') || containers.contentContainer.textContent;
                         containers.contentContainer.innerHTML = MarkdownParser.parseAndHighlight(finalRawText);
                         
-                        // Fade out and remove thinking steps after completion
                         if (containers.thinkingStepsContainer.children.length > 0) {
                             setTimeout(() => {
                                 containers.thinkingStepsContainer.style.transition = 'opacity 0.5s ease-out';
@@ -298,45 +292,36 @@ export class ChatManager {
                                 setTimeout(() => {
                                     containers.thinkingStepsContainer.innerHTML = '';
                                     containers.thinkingStepsContainer.style.opacity = '1';
-                                }, 500);
-                            }, 1000); // Wait 1 second before starting fade
+                                }, 500); 
                         }
                         
-                        // Apply syntax highlighting
                         if (typeof Prism !== 'undefined') {
                             setTimeout(() => {
                                 MarkdownParser.applySyntaxHighlighting(containers.contentContainer);
                             }, 10);
                         }
                     } else if (data.thread_id && data.role === 'assistant') {
-                        // Handle response chunks
                         if (data.error) {
-                            // Error response
                             containers.contentContainer.innerHTML = `<div class="error">${data.text}</div>`;
                             if (data.error.details) {
                                 console.error('API Error Details:', data.error.details);
                             }
                         } else if (data.text) {
-                            // Regular text chunk
                             if (data.text.includes('⚙️ *Executing') || data.text.includes('🔍') || data.text.includes('📈 *Generating insights*')) {
-                                // Handle mixed content - extract thinking step and regular content
                                 if (containers.contentContainer.innerHTML.includes('stream-typing-indicator')) {
                                     containers.contentContainer.innerHTML = '';
                                 }
                                 
-                                // Extract thinking step part
-                                const thinkingMatch = data.text.match(/(⚙️ \*[^*]+\*|🔍[^\\n]*|📈 \*[^*]+\*)/);
+                                const thinkingMatch = data.text.match(/(⚙️ \*[^*]+\*|🔍[^\n]*|📈 \*[^*]+\*)/);
                                 if (thinkingMatch) {
                                     containers.thinkingStepsContainer.innerHTML += `<div class="thinking-step">${thinkingMatch[1]}</div>`;
                                     thinkingStepsShown = true;
                                 }
                                 
-                                // Continue with regular content processing (the rest of the text)
                                 const currentText = containers.contentContainer.getAttribute('data-raw-text') || '';
                                 const newText = currentText + data.text;
                                 containers.contentContainer.setAttribute('data-raw-text', newText);
                                 
-                                // Show raw text during streaming (no markdown parsing yet)
                                 const displayDiv = document.createElement('div');
                                 displayDiv.style.whiteSpace = 'pre-wrap';
                                 displayDiv.style.fontFamily = 'inherit';
@@ -347,17 +332,14 @@ export class ChatManager {
                                 containers.contentContainer.innerHTML = '';
                                 containers.contentContainer.appendChild(displayDiv);
                             } else {
-                                // Regular content - accumulate raw text during streaming
                                 const currentText = containers.contentContainer.getAttribute('data-raw-text') || '';
                                 const newText = currentText + data.text;
                                 containers.contentContainer.setAttribute('data-raw-text', newText);
                                 
-                                // Clear typing indicator on first content
                                 if (!currentText) {
                                     containers.contentContainer.innerHTML = '';
                                 }
                                 
-                                // Show raw text during streaming (no markdown parsing yet)
                                 const displayDiv = document.createElement('div');
                                 displayDiv.style.whiteSpace = 'pre-wrap';
                                 displayDiv.style.fontFamily = 'inherit';
@@ -370,7 +352,6 @@ export class ChatManager {
                             }
                         }
                         
-                        // Update thread ID if provided
                         if (data.thread_id && !this.threadId) {
                             this.threadId = data.thread_id;
                             this.updateThreadIdDisplay();
@@ -395,6 +376,263 @@ export class ChatManager {
             this.handleApiError(error);
         } finally {
             this.hideTyping();
+        }
+    }
+
+    async sendStreamingMessage(message) {
+        this.isStreaming = true;
+        this.sendButton.disabled = true;
+        this.sendButton.textContent = 'Streaming...';
+        
+        this.currentStreamingMessage = this.createStreamingMessage();
+        
+        this.streamBuffer = '';
+        
+        this.streamingStartTime = performance.now();
+        this.streamingFirstResponseReceived = false;
+        
+        try {
+            await this.makeStreamingRequest(message);
+        } catch (error) {
+            this.handleStreamingError(error);
+        } finally {
+            this.finishStreaming();
+        }
+    }
+
+    createStreamingMessage() {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message assistant';
+        
+        const bubbleElement = document.createElement('div');
+        bubbleElement.className = 'message-bubble';
+        bubbleElement.innerHTML = '<span class="streaming-cursor">▊</span>';
+        
+        const timeElement = document.createElement('div');
+        timeElement.className = 'message-time';
+        timeElement.textContent = Utils.formatTimestamp(new Date().toISOString());
+        
+        messageElement.appendChild(bubbleElement);
+        messageElement.appendChild(timeElement);
+        
+        this.messagesContainer.appendChild(messageElement);
+        this.scrollToBottom();
+        
+        return { element: messageElement, bubble: bubbleElement, content: '' };
+    }
+
+    async makeStreamingRequest(message) {
+        const endpoint = this.endpointManager.activeEndpoint;
+        let requestUrl = endpoint?.url || 'http://localhost:8000/chat';
+        
+        if (requestUrl.startsWith('https://localhost')) {
+            requestUrl = requestUrl.replace('https://', 'http://');
+        }
+        
+        if (endpoint?.isStreaming && !requestUrl.includes('/stream')) {
+            requestUrl = requestUrl + '/stream';
+        } else if (!endpoint?.isStreaming && !requestUrl.includes('/chat')) {
+            requestUrl = requestUrl.replace(/\/$/, '') + '/chat/stream';
+        }
+        
+        const requestOptions = {
+            method: endpoint?.method || 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
+                ...(endpoint?.headers || {}),
+                ...this.getAuthHeaders(endpoint)
+            },
+            body: JSON.stringify({
+                messages: { role: "user", text: message },
+                model: endpoint?.model || "custom-notset",
+                ...(this.conversationId && { thread_id: this.conversationId }),
+                stream: true
+            })
+        };
+        
+        const response = await fetch(requestUrl, requestOptions);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                
+                if (done) {
+                    if (this.streamBuffer && this.streamBuffer.trim()) {
+                        await this.processStreamChunk('\n'); 
+                    }
+                    break;
+                }
+                
+                const chunk = decoder.decode(value, { stream: true });
+                await this.processStreamChunk(chunk);
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    }
+
+    async processStreamChunk(chunk) {
+        if (!this.streamBuffer) {
+            this.streamBuffer = '';
+        }
+        
+        this.streamBuffer += chunk;
+        
+        const lines = this.streamBuffer.split('\n');
+        
+        this.streamBuffer = lines.pop() || '';
+        
+        for (const line of lines) {
+            if (line.trim() === '') continue;
+            
+            try {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    if (data === '[DONE]') {
+                        return;
+                    }
+                    
+                    const parsed = JSON.parse(data);
+                    this.appendStreamContent(parsed);
+                }
+                else if (line.startsWith('event: ')) {
+                    const eventType = line.slice(7);
+                    this.lastSseEventType = eventType;
+                    continue;
+                }
+                else if (line.trim().startsWith('{')) {
+                    const parsed = JSON.parse(line);
+                    this.appendStreamContent(parsed);
+                }
+                else {
+                    this.appendStreamContent({ content: line });
+                }
+            } catch (error) {
+                if (line.trim()) {
+                    this.appendStreamContent({ content: line.trim() });
+                }
+            }
+        }
+        
+        if (this.streamBuffer.length > 0 && !this.streamBuffer.includes('{') && !this.streamBuffer.startsWith('data:')) {
+            clearTimeout(this.bufferTimeout);
+            this.bufferTimeout = setTimeout(() => {
+                if (this.streamBuffer.trim()) {
+                    this.appendStreamContent({ content: this.streamBuffer });
+                    this.streamBuffer = '';
+                }
+            }, 50); 
+        }
+    }
+
+    appendStreamContent(data) {
+        if (!this.currentStreamingMessage) {
+            return;
+        }
+
+        this.updateThreadIdFromPayload(data, this.lastSseEventType);
+        if (data && typeof data.content === 'string') {
+            this.updateThreadIdFromPayload(data.content, this.lastSseEventType);
+        }
+
+        if (!this.streamingFirstResponseReceived && this.streamingStartTime) {
+            const endTime = performance.now();
+            const responseTime = endTime - this.streamingStartTime;
+            
+            const endpoint = this.endpointManager.activeEndpoint;
+            if (endpoint && endpoint.id) {
+                StorageManager.recordResponseTime(endpoint.id, responseTime);
+                this.endpointManager.render();
+            }
+            
+            this.streamingFirstResponseReceived = true;
+        }
+        
+        let content = '';
+        
+        if (data.type === 'text_sql') {
+            content = data.content || '';
+        } else if (data.type === 'data') {
+            content = data.content || '';
+        } else if (data.type === 'error') {
+            content = data.content || `Error: ${data.error || 'Unknown error'}`;
+        }
+        else if (data.stream_end) {
+            return; 
+        }
+        else if (data.content) {
+            content = data.content;
+        } else if (data.response) {
+            content = data.response;
+        } else if (data.text) {
+            content = data.text;
+        } else if (data.delta && data.delta.content) {
+            content = data.delta.content;
+        } else if (typeof data === 'string') {
+            content = data;
+        }
+        
+        if (content) {
+            this.currentStreamingMessage.content += content;
+            
+            this.updateStreamingDisplay();
+        }
+    }
+
+    updateStreamingDisplay() {
+        if (!this.currentStreamingMessage) return;
+        
+        const safeContent = this.escapeHtml(this.currentStreamingMessage.content);
+        
+        this.currentStreamingMessage.bubble.innerHTML = 
+            safeContent.replace(/\n/g, '<br>') + '<span class="streaming-cursor">▊</span>';
+        this.scrollToBottom();
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    finishStreaming() {
+        this.isStreaming = false;
+        this.sendButton.disabled = false;
+        this.sendButton.textContent = 'Send';
+        
+        if (this.bufferTimeout) {
+            clearTimeout(this.bufferTimeout);
+            this.bufferTimeout = null;
+        }
+        
+        if (this.currentStreamingMessage) {
+            const finalContent = MarkdownParser.parseAndHighlight(this.currentStreamingMessage.content, this.currentStreamingMessage.bubble);
+            this.currentStreamingMessage.bubble.innerHTML = finalContent;
+            this.currentStreamingMessage = null;
+        }
+        
+        this.streamBuffer = '';
+        
+        this.scrollToBottom();
+    }
+
+    handleStreamingError(error) {
+        if (this.currentStreamingMessage) {
+            this.currentStreamingMessage.bubble.innerHTML = `
+                <span style="color: #ef4444;">
+                    Streaming error: ${error.message}. Please check your endpoint configuration.
+                </span>
+            `;
+            this.currentStreamingMessage.bubble.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            this.currentStreamingMessage.bubble.style.color = 'white';
         }
     }
 
@@ -427,6 +665,59 @@ export class ChatManager {
             authHeaders['Authorization'] = `Bearer ${endpoint.auth.token}`;
         }
         return authHeaders;
+    }
+
+    updateThreadIdFromPayload(payload, eventType) {
+        try {
+            const id = this.extractThreadId(payload, eventType);
+            if (id && this.conversationId !== id) {
+                this.conversationId = id;
+                this.updateConversationIdDisplay();
+            }
+        } catch (e) {
+        }
+    }
+
+    extractThreadId(payload, eventType) {
+        const isLikelyId = (val) => {
+            if (typeof val !== 'string' || !val.trim()) return false;
+            if (val.startsWith('thread_')) return true;
+            if (/^[0-9a-fA-F-]{16,}$/.test(val)) return true; 
+            if (val.length >= 12 && /[A-Za-z0-9_-]/.test(val)) return true;
+            return false;
+        };
+
+        if (payload && typeof payload === 'object') {
+            const candidates = [
+                payload.thread_id,
+                payload.conversation_id,
+                payload?.thread?.id,
+                payload?.thread?.thread_id,
+                payload?.message?.thread_id,
+                payload?.meta?.thread_id,
+                payload?.meta?.conversation_id,
+                payload?.data?.thread_id,
+            ].filter(Boolean);
+            const found = candidates.find(isLikelyId);
+            if (found) return found;
+        }
+
+        if (typeof payload === 'string') {
+            const m1 = payload.match(/\bthread[_ -]?id\b[\u00A0:=\-\\]*["']?([A-Za-z0-9_\-]{8,})["']?/i);
+            if (m1 && isLikelyId(m1[1])) return m1[1];
+
+            const m2 = payload.match(/\bconversation[_ -]?id\b[\u00A0:=\-\\]*["']?([A-Za-z0-9_\-]{8,})["']?/i);
+            if (m2 && isLikelyId(m2[1])) return m2[1];
+
+            const m3 = payload.match(/\bthread_[A-Za-z0-9_\-]{4,}\b/);
+            if (m3 && isLikelyId(m3[0])) return m3[0];
+        }
+
+        if (eventType && typeof payload === 'object' && /thread/i.test(eventType) && isLikelyId(payload?.id)) {
+            return payload.id;
+        }
+
+        return null;
     }
 
     handleApiResponse(data) {
@@ -477,7 +768,6 @@ export class ChatManager {
                 contentEl.classList.add('error');
             } else {
                 contentEl.innerHTML = MarkdownParser.parseAndHighlight(text);
-                // Apply syntax highlighting
                 if (typeof Prism !== 'undefined') {
                     setTimeout(() => {
                         MarkdownParser.applySyntaxHighlighting(contentEl);
@@ -525,6 +815,19 @@ export class ChatManager {
         this.updateThreadIdDisplay();
         this.messagesContainer.innerHTML = '';
         this.addWelcomeMessage();
+        
+        this.isStreaming = false;
+        this.currentStreamingMessage = null;
+        this.streamBuffer = '';
+        this.sendButton.disabled = false;
+        this.sendButton.textContent = 'Send';
+        
+        const activeEndpoint = this.endpointManager?.activeEndpoint;
+        if (activeEndpoint && activeEndpoint.id) {
+            StorageManager.clearResponseTimesForEndpoint(activeEndpoint.id);
+            this.endpointManager.render();
+        }
+        
         this.chatInput.focus();
     }
 

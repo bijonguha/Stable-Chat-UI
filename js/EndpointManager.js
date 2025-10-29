@@ -267,14 +267,19 @@ export class EndpointManager {
         
         // Get average response time for this endpoint
         const avgResponseTime = StorageManager.getAverageResponseTime(endpoint.id);
-        let responseTimeDisplay = '';
-        
-        if (avgResponseTime) {
-            // Convert to seconds and format
-            const responseTimeInSeconds = (avgResponseTime / 1000).toFixed(1);
-            
-            responseTimeDisplay = `<span class="response-time-display">${responseTimeInSeconds}s</span>`;
-        }
+
+        // Always show a value; if no data (e.g., right after starting a new chat), show 0.0s
+        const hasData = avgResponseTime !== null && avgResponseTime !== undefined;
+        const valueMs = hasData ? avgResponseTime : 0;
+
+        // Convert to seconds and format
+        const responseTimeInSeconds = (valueMs / 1000).toFixed(1);
+        const label = endpoint.isStreaming ? 'Avg TTFB ' : '';
+        const tooltip = endpoint.isStreaming
+            ? 'Average time to first byte (first streamed chunk) from request start'
+            : 'Average full round-trip time';
+
+        let responseTimeDisplay = `<span class="response-time-display" title="${tooltip}">${label}${responseTimeInSeconds}s</span>`;
         
         endpointElement.innerHTML = `
             <div class="endpoint-info">
