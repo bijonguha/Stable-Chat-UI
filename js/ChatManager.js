@@ -293,6 +293,7 @@ export class ChatManager {
                                     containers.thinkingStepsContainer.innerHTML = '';
                                     containers.thinkingStepsContainer.style.opacity = '1';
                                 }, 500); 
+                            }, 100);
                         }
                         
                         if (typeof Prism !== 'undefined') {
