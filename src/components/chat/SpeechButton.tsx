@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 
