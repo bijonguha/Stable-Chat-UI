@@ -1,3 +1,5 @@
+export type AgentStatus = 'thinking' | 'tool_calling' | 'streaming' | 'done';
+
 export interface ApiRequest {
   thread_id: string;
   messages: {

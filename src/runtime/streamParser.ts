@@ -1,4 +1,5 @@
 import type { StreamChunkData } from '../types/chat';
+import type { AgentStatus } from '../types/api';
 
 export interface ParsedStreamEvent {
   data: StreamChunkData;
@@ -29,6 +30,20 @@ export function extractTextContent(data: StreamChunkData): string {
  */
 export function isThinkingStep(text: string): boolean {
   return text.includes('⚙️ *Executing') || text.includes('🔍') || text.includes('📈 *Generating insights*');
+}
+
+/**
+ * Extract the generic agent status from any parsed chunk.
+ * Works for any backend that sends a `status` field in its SSE payload.
+ */
+export function extractStatusFromChunk(data: unknown): AgentStatus | undefined {
+  if (data && typeof data === 'object' && 'status' in data) {
+    const s = (data as Record<string, unknown>).status;
+    if (s === 'thinking' || s === 'tool_calling' || s === 'streaming' || s === 'done') {
+      return s as AgentStatus;
+    }
+  }
+  return undefined;
 }
 
 /**

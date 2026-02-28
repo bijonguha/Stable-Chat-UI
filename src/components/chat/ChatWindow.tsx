@@ -77,7 +77,7 @@ export function ChatWindow() {
         {/* Resize Handle — top-left corner (chat is anchored bottom-right) */}
         <div
           ref={resizeHandleRef}
-          className="absolute top-0 left-0 w-5 h-5 rounded-br-lg cursor-nw-resize opacity-60 transition-all hover:opacity-100 z-[5] hidden md:block"
+          className="absolute top-0 left-0 w-5 h-5 rounded-br-lg cursor-[nw-resize] opacity-60 transition-all hover:opacity-100 z-[5] hidden md:block"
           style={{
             background: 'linear-gradient(315deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))',
           }}

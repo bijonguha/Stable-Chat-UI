@@ -5,9 +5,6 @@ export function buildStreamUrl(endpoint: Endpoint): string {
   if (url.startsWith('https://localhost')) {
     url = url.replace('https://', 'http://');
   }
-  if (endpoint.isStreaming && !url.includes('/stream')) {
-    url = url.replace(/\/$/, '') + '/stream';
-  }
   return url;
 }
 
@@ -34,7 +31,7 @@ export function buildHeaders(endpoint: Endpoint): Record<string, string> {
 
 export function buildRequestBody(message: string, threadId: string | null, isStreaming: boolean): string {
   return JSON.stringify({
-    thread_id: threadId || '',
+    ...(threadId ? { thread_id: threadId } : {}),
     messages: { role: 'user', text: message },
     ...(isStreaming ? { stream: true } : {}),
   });

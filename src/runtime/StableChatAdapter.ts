@@ -1,7 +1,7 @@
 import type { ChatModelAdapter, ChatModelRunOptions } from '@assistant-ui/react';
 import type { Endpoint } from '../types/endpoint';
 import { buildStreamUrl, buildRegularUrl, buildHeaders, buildRequestBody } from './requestBuilder';
-import { parseStream, extractTextContent, isThinkingStep, extractThinkingText } from './streamParser';
+import { parseStream, extractTextContent, extractStatusFromChunk, isThinkingStep, extractThinkingText } from './streamParser';
 import { extractThreadId } from './threadIdExtractor';
 
 interface AdapterCallbacks {
@@ -14,6 +14,7 @@ interface AdapterCallbacks {
 export function createStableChatAdapter(callbacks: AdapterCallbacks): ChatModelAdapter {
   return {
     async *run({ messages, abortSignal }: ChatModelRunOptions) {
+      try {
       const endpoint = callbacks.getEndpoint();
       if (!endpoint) {
         yield { content: [{ type: 'text' as const, text: 'No endpoint configured. Please add an API endpoint.' }] };
@@ -52,8 +53,8 @@ export function createStableChatAdapter(callbacks: AdapterCallbacks): ChatModelA
         }
 
         const reader = response.body!.getReader();
-        let fullText = '';
-        const thinkingSteps: string[] = [];
+        let accumulatedText = '';
+        const reasoningLines: string[] = [];
 
         for await (const event of parseStream(reader, abortSignal)) {
           const { data, eventType } = event;
@@ -62,7 +63,7 @@ export function createStableChatAdapter(callbacks: AdapterCallbacks): ChatModelA
           const tid = extractThreadId(data, eventType);
           if (tid) callbacks.setThreadId(tid);
 
-          // Handle SSE 'done' event
+          // Handle SSE 'done' event type
           if (data.type === 'done') {
             if (data.thread_id) callbacks.setThreadId(data.thread_id);
             continue;
@@ -71,7 +72,28 @@ export function createStableChatAdapter(callbacks: AdapterCallbacks): ChatModelA
           // Handle 'id' type
           if (data.type === 'id') continue;
 
-          // Record response time on first content
+          // Detect generic agent status field (works for any agentic backend)
+          const agentStatus = extractStatusFromChunk(data);
+
+          if (agentStatus === 'thinking') {
+            if (reasoningLines.length === 0) reasoningLines.push('Thinking...');
+            yield { content: [{ type: 'reasoning' as const, text: reasoningLines.join('\n') }] };
+            continue;
+          }
+
+          if (agentStatus === 'tool_calling') {
+            reasoningLines.push('Calling tools...');
+            yield { content: [{ type: 'reasoning' as const, text: reasoningLines.join('\n') }] };
+            continue;
+          }
+
+          if (agentStatus === 'done') continue;
+
+          // 'streaming' status or no status — this is real response text
+          const text = extractTextContent(data);
+          if (!text) continue;
+
+          // Record response time on first real content
           if (!firstResponseReceived) {
             firstResponseReceived = true;
             const elapsed = performance.now() - startTime;
@@ -80,30 +102,20 @@ export function createStableChatAdapter(callbacks: AdapterCallbacks): ChatModelA
             }
           }
 
-          // Extract text content
-          const text = extractTextContent(data);
-          if (!text) continue;
-
-          // Check for thinking steps
-          if (isThinkingStep(text)) {
+          // Emoji-based thinking detection: fallback for backends that embed
+          // thinking indicators in text (no status field)
+          if (!agentStatus && isThinkingStep(text)) {
             const stepText = extractThinkingText(text);
-            if (stepText) thinkingSteps.push(stepText);
+            if (stepText) reasoningLines.push(stepText);
           }
 
-          fullText += text;
+          accumulatedText += text;
 
-          // Build content parts
           const contentParts: Array<{ type: 'text'; text: string } | { type: 'reasoning'; text: string }> = [];
-
-          // Add thinking steps as reasoning parts
-          if (thinkingSteps.length > 0) {
-            contentParts.push({
-              type: 'reasoning' as const,
-              text: thinkingSteps.join('\n'),
-            });
+          if (reasoningLines.length > 0) {
+            contentParts.push({ type: 'reasoning' as const, text: reasoningLines.join('\n') });
           }
-
-          contentParts.push({ type: 'text' as const, text: fullText });
+          contentParts.push({ type: 'text' as const, text: accumulatedText });
 
           yield { content: contentParts };
         }
@@ -142,6 +154,11 @@ export function createStableChatAdapter(callbacks: AdapterCallbacks): ChatModelA
           : data.text || 'No response';
 
         yield { content: [{ type: 'text' as const, text }] };
+      }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        const msg = err instanceof Error ? err.message : String(err);
+        yield { content: [{ type: 'text' as const, text: `⚠️ Error: ${msg}` }] };
       }
     },
   };

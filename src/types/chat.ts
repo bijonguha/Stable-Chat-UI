@@ -7,6 +7,7 @@ export interface ChatMessage {
 
 export interface StreamChunkData {
   type?: string;
+  status?: string;
   content?: string;
   response?: string;
   text?: string;

@@ -16,13 +16,6 @@ export function validateJwtToken(token: string): void {
     JSON.parse(atob(parts[0]));
     const payload = JSON.parse(atob(parts[1]));
 
-    const requiredClaims = ['userId', 'sub', 'corporateAccountId'];
-    const missingClaims = requiredClaims.filter(claim => !payload[claim]);
-
-    if (missingClaims.length > 0) {
-      throw new Error(`JWT token missing required claims: ${missingClaims.join(', ')}`);
-    }
-
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
       throw new Error('JWT token has expired. Please refresh your token.');
     }
