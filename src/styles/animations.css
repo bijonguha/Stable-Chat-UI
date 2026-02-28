@@ -1,0 +1,54 @@
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(-10px, -5px) rotate(1deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes pulse-scale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-8px); }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes progress {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-float { animation: float 8s ease-in-out infinite; }
+.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+.animate-pulse-dot { animation: pulse 2s infinite; }
+.animate-pulse-scale { animation: pulse-scale 1.5s ease-in-out infinite; }
+.animate-pulse-subtle { animation: pulse-subtle 2s infinite; }
+.animate-typing { animation: typing 1.4s infinite; }
+.animate-blink { animation: blink 1s infinite; }
+.animate-shimmer { animation: shimmer 2s infinite; }
+.animate-progress { animation: progress 2s ease-in-out infinite; }

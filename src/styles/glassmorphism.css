@@ -1,0 +1,134 @@
+/* Glassmorphism utility classes */
+.glass {
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.8));
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  backdrop-filter: blur(20px);
+}
+
+.glass-hover:hover {
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.8), rgba(31, 41, 55, 0.8));
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.glass-header {
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.8), rgba(31, 41, 55, 0.8));
+}
+
+.glass-input {
+  background: rgba(17, 24, 39, 0.8);
+  border: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.glass-modal {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.glass-sidenav {
+  background: linear-gradient(180deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.98));
+  border-right: 1px solid rgba(75, 85, 99, 0.3);
+  backdrop-filter: blur(20px);
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.glass-chat {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.95), rgba(31, 41, 55, 0.95));
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Gradient buttons */
+.btn-gradient-purple {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.btn-gradient-purple:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+}
+
+.btn-gradient-green {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.btn-gradient-green:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+.btn-gradient-red {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.btn-gradient-gray {
+  background: linear-gradient(135deg, #374151, #4b5563);
+}
+
+.btn-gradient-gray:hover {
+  background: linear-gradient(135deg, #4b5563, #6b7280);
+}
+
+/* Badge gradients */
+.badge-streaming {
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+}
+
+.badge-regular {
+  background: linear-gradient(135deg, #4b5563, #374151);
+  box-shadow: 0 2px 10px rgba(75, 85, 99, 0.2);
+}
+
+.badge-auth {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+}
+
+.badge-active {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.badge-response-time {
+  background: linear-gradient(135deg, #0891b2, #0e7490);
+  box-shadow: 0 2px 10px rgba(8, 145, 178, 0.3);
+}
+
+/* Message bubbles */
+.bubble-user {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.bubble-assistant {
+  background: rgba(55, 65, 81, 0.6);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+/* Chat toggle */
+.chat-toggle-gradient {
+  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
+}
+
+.chat-toggle-gradient:hover {
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5);
+}
+
+/* Mobile responsive - full width chat on small screens */
+@media (max-width: 768px) {
+  .glass-chat {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+    resize: none !important;
+  }
+}
