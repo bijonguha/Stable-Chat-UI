@@ -1,4 +1,5 @@
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Copy, Check } from 'lucide-react';
+import { useState } from 'react';
 
 interface ChatHeaderProps {
   statusText: string;
@@ -8,6 +9,15 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ statusText, threadId, onNewChat, onClose }: ChatHeaderProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (!threadId) return;
+    navigator.clipboard.writeText(threadId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   return (
     <div className="glass-header p-4 border-b border-dark-400/20 text-center relative">
       <h2 className="text-lg font-medium text-dark-25 mb-1">AI Chat</h2>
@@ -17,9 +27,21 @@ export function ChatHeader({ statusText, threadId, onNewChat, onClose }: ChatHea
       </div>
 
       {threadId && (
-        <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 bg-purple-400/90 text-white rounded-md text-[0.6rem] shadow-[0_2px_8px_rgba(139,92,246,0.3)] backdrop-blur-sm z-10">
-          <span className="font-medium opacity-80">Thread ID:</span>
-          <span className="font-mono font-semibold">{threadId}</span>
+        <div className="flex items-center justify-center gap-1.5 mt-1.5">
+          <span className="text-[0.6rem] text-dark-300">Thread:</span>
+          <span
+            className="font-mono text-[0.6rem] text-purple-300 max-w-[160px] truncate"
+            title={threadId}
+          >
+            {threadId}
+          </span>
+          <button
+            onClick={handleCopy}
+            className="text-dark-400 hover:text-purple-300 transition-colors"
+            title="Copy thread ID"
+          >
+            {copied ? <Check className="w-2.5 h-2.5 text-green-400" /> : <Copy className="w-2.5 h-2.5" />}
+          </button>
         </div>
       )}
 
