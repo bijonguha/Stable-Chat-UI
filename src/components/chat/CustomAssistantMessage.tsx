@@ -2,7 +2,7 @@ import { MessagePrimitive, useMessage } from '@assistant-ui/react';
 import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import { formatTimestamp } from '../../utils/formatters';
 import { SpeechButton } from './SpeechButton';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronDown, Code2 } from 'lucide-react';
 import remarkGfm from 'remark-gfm';
 
@@ -50,12 +50,72 @@ function ReasoningBlock({ status, text }: ReasoningProps) {
   );
 }
 
-function ScrollableTable({ children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
+const ROWS_PER_PAGE = 10;
+
+function PaginatedTable({ children, ...props }: React.HTMLAttributes<HTMLTableElement>) {
+  const [page, setPage] = useState(1);
+
+  let thead: React.ReactNode = null;
+  const tbodyRows: React.ReactElement[] = [];
+
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return;
+    const elem = child as React.ReactElement<any>;
+    if (elem.type === 'thead') {
+      thead = elem;
+    } else if (elem.type === 'tbody') {
+      React.Children.forEach(elem.props.children, (row) => {
+        if (React.isValidElement(row) && (row as React.ReactElement).type === 'tr') {
+          tbodyRows.push(row as React.ReactElement);
+        }
+      });
+    }
+  });
+
+  const totalRows = tbodyRows.length;
+  const totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
+
+  // ≤ 10 rows: render normally (no pagination)
+  if (totalPages <= 1) {
+    return (
+      <div className="overflow-x-auto my-2 rounded-lg border border-dark-400/20">
+        <table {...props} className="w-full border-collapse text-sm min-w-max">
+          {children}
+        </table>
+      </div>
+    );
+  }
+
+  const start = (page - 1) * ROWS_PER_PAGE;
+  const visibleRows = tbodyRows.slice(start, start + ROWS_PER_PAGE);
+
   return (
-    <div className="overflow-x-auto my-2 rounded-lg border border-dark-400/20">
-      <table {...props} className="w-full border-collapse text-sm min-w-max">
-        {children}
-      </table>
+    <div className="my-2">
+      <div className="overflow-x-auto rounded-t-lg border border-dark-400/20">
+        <table {...props} className="w-full border-collapse text-sm min-w-max">
+          {thead}
+          <tbody>{visibleRows}</tbody>
+        </table>
+      </div>
+      {/* Pagination bar */}
+      <div className="flex items-center justify-between px-3 py-2 bg-dark-600/40 border border-t-0 border-dark-400/20 rounded-b-lg">
+        <span className="text-[0.7rem] text-dark-300">
+          {start + 1}–{Math.min(start + ROWS_PER_PAGE, totalRows)} of {totalRows} rows
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+            className="text-[0.7rem] px-2 py-1 rounded text-dark-300 hover:text-dark-100 hover:bg-dark-400/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >← Prev</button>
+          <span className="text-[0.7rem] text-dark-400">{page} / {totalPages}</span>
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(p => p + 1)}
+            className="text-[0.7rem] px-2 py-1 rounded text-dark-300 hover:text-dark-100 hover:bg-dark-400/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >Next →</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -100,7 +160,7 @@ export function CustomAssistantMessage() {
               <MarkdownTextPrimitive
                 smooth
                 remarkPlugins={[remarkGfm]}
-                components={{ pre: CollapsibleCodeBlock as any, table: ScrollableTable as any }}
+                components={{ pre: CollapsibleCodeBlock as any, table: PaginatedTable as any }}
                 className="[&_code]:bg-black/30 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-amber-400 [&_code]:text-[0.85rem] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-dark-50 [&_a]:text-purple-300 [&_a]:underline [&_strong]:text-white [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:my-0.5 [&_blockquote]:border-l-2 [&_blockquote]:border-purple-400/50 [&_blockquote]:pl-4 [&_blockquote]:text-dark-200 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_table]:border-collapse [&_table]:text-sm [&_th]:bg-dark-400/40 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:border [&_th]:border-dark-400/30 [&_td]:border [&_td]:border-dark-400/30 [&_td]:px-3 [&_td]:py-2 [&_td]:whitespace-nowrap [&_tr:nth-child(even)]:bg-dark-400/10"
               />
             ),
