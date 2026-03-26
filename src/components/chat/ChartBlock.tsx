@@ -74,9 +74,11 @@ export function ChartBlock({ rawJson }: { rawJson: string }) {
   try {
     parsed = JSON.parse(rawJson);
   } catch {
+    // JSON is incomplete — still streaming. Show a placeholder instead of an error.
     return (
-      <div className="my-2 rounded-lg border border-red-500/30 bg-red-900/10 px-4 py-3 text-sm text-red-300">
-        Invalid chart JSON
+      <div className="my-3 rounded-xl border border-white/10 bg-white/5 p-4 flex items-center gap-3" style={{ height: '64px' }}>
+        <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse flex-shrink-0" />
+        <span className="text-xs text-dark-300">Rendering chart…</span>
       </div>
     );
   }
