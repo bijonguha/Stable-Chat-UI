@@ -5,6 +5,7 @@ import { SpeechButton } from './SpeechButton';
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, Code2 } from 'lucide-react';
 import remarkGfm from 'remark-gfm';
+import { ChartBlock } from './ChartBlock';
 
 type ReasoningProps = {
   status?: { type: string };
@@ -120,8 +121,39 @@ function PaginatedTable({ children, ...props }: React.HTMLAttributes<HTMLTableEl
   );
 }
 
+function extractText(node: React.ReactNode): string {
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  if (React.isValidElement(node)) return extractText((node.props as any).children);
+  return '';
+}
+
+// Intercepts ```plot blocks at the <code> level — the most reliable place to
+// read className, since react-markdown always sets it here before any wrapping.
+function PlotCodeBlock({ className, children }: { className?: string; children?: React.ReactNode }) {
+  if ((className ?? '').includes('language-plot')) {
+    return <ChartBlock rawJson={extractText(children).trim()} />;
+  }
+  return <code className={className}>{children}</code>;
+}
+
 function CollapsibleCodeBlock({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) {
   const [isOpen, setIsOpen] = useState(true);
+
+  // react-markdown passes the unrendered <code> element as children of <pre>,
+  // so child.type is PlotCodeBlock (the component function), not ChartBlock.
+  // Detect this and pass through without the collapsible wrapper.
+  let isChart = false;
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return;
+    if (child.type === PlotCodeBlock) isChart = true;
+    // Also detect via className in case of SSR or future changes
+    const cls: string = (child.props as any).className ?? '';
+    if (cls.includes('language-plot')) isChart = true;
+  });
+  if (isChart) return <>{children}</>;
+
   return (
     <div className="my-2 rounded-lg border border-dark-400/30 overflow-hidden">
       <button
@@ -160,7 +192,7 @@ export function CustomAssistantMessage() {
               <MarkdownTextPrimitive
                 smooth
                 remarkPlugins={[remarkGfm]}
-                components={{ pre: CollapsibleCodeBlock as any, table: PaginatedTable as any }}
+                components={{ pre: CollapsibleCodeBlock as any, table: PaginatedTable as any, code: PlotCodeBlock as any }}
                 className="[&_code]:bg-black/30 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono [&_code]:text-amber-400 [&_code]:text-[0.85rem] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-dark-50 [&_a]:text-purple-300 [&_a]:underline [&_strong]:text-white [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:my-0.5 [&_blockquote]:border-l-2 [&_blockquote]:border-purple-400/50 [&_blockquote]:pl-4 [&_blockquote]:text-dark-200 [&_h1]:text-lg [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:font-semibold [&_table]:border-collapse [&_table]:text-sm [&_th]:bg-dark-400/40 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:border [&_th]:border-dark-400/30 [&_td]:border [&_td]:border-dark-400/30 [&_td]:px-3 [&_td]:py-2 [&_td]:whitespace-nowrap [&_tr:nth-child(even)]:bg-dark-400/10"
               />
             ),
