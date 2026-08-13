@@ -1,3 +1,4 @@
+import React from 'react';
 import { Bar, Line, Pie, Doughnut, Scatter } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -42,9 +43,11 @@ const PALETTE = [
 
 const PALETTE_ALPHA = PALETTE.map(c => c + '33'); // ~20% opacity fill
 
-function colorizeDatasets(datasets: any[], chartType: string): any[] {
+function colorizeDatasets(datasets: unknown, chartType: string): any[] {
+  if (!Array.isArray(datasets)) return [];
   const isArc = chartType === 'pie' || chartType === 'doughnut';
   return datasets.map((ds, i) => {
+    if (!ds || typeof ds !== 'object') ds = {};
     if (isArc) {
       // Assign a color per data point
       const count = Array.isArray(ds.data) ? ds.data.length : 0;
@@ -69,11 +72,42 @@ function colorizeDatasets(datasets: any[], chartType: string): any[] {
   });
 }
 
-export function ChartBlock({ rawJson }: { rawJson: string }) {
+function ChartError({ message }: { message: string }) {
+  return (
+    <div className="my-2 rounded-lg border border-red-400/30 bg-red-500/5 px-4 py-3 text-sm text-red-300">
+      Couldn't render chart: {message}
+    </div>
+  );
+}
+
+class ChartErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: string | null }> {
+  state = { error: null as string | null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+
+  componentDidUpdate(prevProps: { children: React.ReactNode }) {
+    // Reset once a new render (e.g. a corrected chart) comes through.
+    if (this.state.error && prevProps.children !== this.props.children) {
+      this.setState({ error: null });
+    }
+  }
+
+  render() {
+    if (this.state.error) return <ChartError message={this.state.error} />;
+    return this.props.children;
+  }
+}
+
+function ChartBlockInner({ rawJson, isStreaming }: { rawJson: string; isStreaming?: boolean }) {
   let parsed: any;
   try {
     parsed = JSON.parse(rawJson);
   } catch {
+    if (!isStreaming) {
+      return <ChartError message="the chart data is not valid JSON." />;
+    }
     // JSON is incomplete — still streaming. Show a placeholder instead of an error.
     return (
       <div className="my-3 rounded-xl border border-white/10 bg-white/5 p-4 flex items-center gap-3" style={{ height: '64px' }}>
@@ -83,23 +117,28 @@ export function ChartBlock({ rawJson }: { rawJson: string }) {
     );
   }
 
+  if (!parsed || typeof parsed !== 'object') {
+    return <ChartError message="expected a JSON object describing the chart." />;
+  }
+
   const { type: chartType, title, xLabel, yLabel, data } = parsed;
-  const Component = CHART_MAP[(chartType ?? '').toLowerCase()];
+  const normalizedType = typeof chartType === 'string' ? chartType.toLowerCase() : '';
+  const Component = CHART_MAP[normalizedType];
 
   if (!Component) {
     return (
       <div className="my-2 rounded-lg border border-dark-400/30 px-4 py-3 text-sm text-dark-300">
         Missing or unsupported chart type:{' '}
-        <code className="text-amber-400">{chartType}</code>. Add{' '}
+        <code className="text-amber-400">{String(chartType)}</code>. Add{' '}
         <code className="text-amber-400">"type": "line|bar|pie|doughnut|scatter"</code> to the JSON.
       </div>
     );
   }
 
-  const type = chartType.toLowerCase();
+  const type = normalizedType;
   const coloredData = {
     ...data,
-    datasets: colorizeDatasets(data?.datasets ?? [], type),
+    datasets: colorizeDatasets(data?.datasets, type),
   };
 
   const options: any = {
@@ -150,5 +189,13 @@ export function ChartBlock({ rawJson }: { rawJson: string }) {
     >
       <Component data={coloredData} options={options} />
     </div>
+  );
+}
+
+export function ChartBlock(props: { rawJson: string; isStreaming?: boolean }) {
+  return (
+    <ChartErrorBoundary>
+      <ChartBlockInner {...props} />
+    </ChartErrorBoundary>
   );
 }

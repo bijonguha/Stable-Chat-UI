@@ -2,10 +2,15 @@ import { MessagePrimitive, useMessage } from '@assistant-ui/react';
 import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import { formatTimestamp } from '../../utils/formatters';
 import { SpeechButton } from './SpeechButton';
-import React, { useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Code2 } from 'lucide-react';
 import remarkGfm from 'remark-gfm';
 import { ChartBlock } from './ChartBlock';
+
+// Lets ChartBlock (rendered deep inside markdown component overrides) know
+// whether the parent message is still streaming, without prop-drilling
+// through react-markdown's AST-driven component substitution.
+const MessageStreamingContext = createContext(false);
 
 type ReasoningProps = {
   status?: { type: string };
@@ -76,6 +81,12 @@ function PaginatedTable({ children, ...props }: React.HTMLAttributes<HTMLTableEl
   const totalRows = tbodyRows.length;
   const totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
 
+  // Content can be regenerated in place with fewer rows while `page` still
+  // points past the new total — clamp back into range instead of rendering blank.
+  useEffect(() => {
+    setPage(p => (totalPages > 0 && p > totalPages ? totalPages : p));
+  }, [totalPages]);
+
   // ≤ 10 rows: render normally (no pagination)
   if (totalPages <= 1) {
     return (
@@ -134,6 +145,7 @@ function extractText(node: React.ReactNode): string {
 // it bypasses all React child-traversal and component-type ambiguity.
 function CollapsibleCodeBlock({ children, node, ...props }: any) {
   const [isOpen, setIsOpen] = useState(true);
+  const isStreaming = useContext(MessageStreamingContext);
 
   const codeNode = (node as any)?.children?.[0];
   const classNames: string[] = codeNode?.properties?.className ?? [];
@@ -145,7 +157,7 @@ function CollapsibleCodeBlock({ children, node, ...props }: any) {
     // Use React children for text extraction — hast text nodes may be absent
     // in @assistant-ui/react-markdown's transformed tree.
     const rawJson = extractText(children).trim();
-    return <ChartBlock rawJson={rawJson} />;
+    return <ChartBlock rawJson={rawJson} isStreaming={isStreaming} />;
   }
 
   return (
@@ -177,9 +189,12 @@ export function CustomAssistantMessage() {
       .join('\n');
   }, [message?.content]);
 
+  const isStreaming = message?.status?.type === 'running';
+
   return (
     <MessagePrimitive.Root className="flex flex-col max-w-[80%] self-start">
       <div className="bubble-assistant text-dark-50 px-4 py-3 rounded-2xl rounded-bl-sm text-sm leading-relaxed">
+        <MessageStreamingContext.Provider value={isStreaming}>
         <MessagePrimitive.Content
           components={{
             Text: (_props: any) => (
@@ -194,6 +209,7 @@ export function CustomAssistantMessage() {
             ),
           }}
         />
+        </MessageStreamingContext.Provider>
       </div>
       <div className="flex items-center gap-2 mt-1">
         <span className="text-[0.7rem] text-dark-300">

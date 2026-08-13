@@ -145,9 +145,9 @@ export function createStableChatAdapter(callbacks: AdapterCallbacks): ChatModelA
           callbacks.onResponseTime(endpoint.id, elapsed);
         }
 
-        // Extract thread ID
-        if (data.thread_id) callbacks.setThreadId(data.thread_id);
-        if (data.conversation_id) callbacks.setThreadId(data.conversation_id);
+        // Extract thread ID (same nested-shape support as the streaming path)
+        const tid = extractThreadId(data);
+        if (tid) callbacks.setThreadId(tid);
 
         const text = data.error
           ? data.text || 'An error occurred'

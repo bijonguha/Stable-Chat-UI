@@ -36,6 +36,12 @@ export function useSpeechSynthesis() {
 
   const cleanText = useCallback((text: string): string => {
     return text
+      // GFM table separator rows, e.g. "| --- | :--- |"
+      .replace(/^\s*\|?[\s:-]*-[\s:|-]*$/gm, '')
+      // GFM table rows -> comma-separated cell text, read before other markdown stripping
+      .replace(/^\s*\|(.+)\|\s*$/gm, (_m, row: string) =>
+        row.split('|').map((cell: string) => cell.trim()).filter(Boolean).join(', ')
+      )
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/\*(.*?)\*/g, '$1')
       .replace(/`(.*?)`/g, '$1')

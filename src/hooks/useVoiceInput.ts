@@ -25,6 +25,8 @@ export function useVoiceInput({ onResult, language = 'en-US' }: UseVoiceInputOpt
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
 
   const isSupported =
     typeof window !== 'undefined' &&
@@ -59,7 +61,7 @@ export function useVoiceInput({ onResult, language = 'en-US' }: UseVoiceInputOpt
         }
       }
 
-      onResult?.({
+      onResultRef.current?.({
         finalTranscript: finalTranscript.trim(),
         interimTranscript: interimTranscript.trim(),
         isFinal: finalTranscript.length > 0,
@@ -86,7 +88,7 @@ export function useVoiceInput({ onResult, language = 'en-US' }: UseVoiceInputOpt
     return () => {
       try { recognition.stop(); } catch {}
     };
-  }, [isSupported, language, onResult]);
+  }, [isSupported, language]);
 
   const startListening = useCallback(() => {
     if (!recognitionRef.current || isRecording) return;

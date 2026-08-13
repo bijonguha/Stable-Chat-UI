@@ -1,5 +1,6 @@
 import { Plus, X, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 
 interface ChatHeaderProps {
   statusText: string;
@@ -11,9 +12,10 @@ interface ChatHeaderProps {
 export function ChatHeader({ statusText, threadId, onNewChat, onClose }: ChatHeaderProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!threadId) return;
-    navigator.clipboard.writeText(threadId);
+    const ok = await copyToClipboard(threadId);
+    if (!ok) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

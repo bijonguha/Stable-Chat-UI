@@ -14,7 +14,8 @@ export function extractTextContent(data: StreamChunkData): string {
     return data.content || '';
   }
   if (data.type === 'error') {
-    return data.content || `Error: ${data.error || 'Unknown error'}`;
+    const errMsg = typeof data.error === 'string' ? data.error : data.error?.details;
+    return data.content || `Error: ${errMsg || 'Unknown error'}`;
   }
   if (data.stream_end) return '';
   if (data.content) return data.content;

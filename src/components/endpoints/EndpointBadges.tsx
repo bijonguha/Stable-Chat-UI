@@ -28,8 +28,8 @@ export function AuthBadge() {
 }
 
 export function ResponseTimeBadge({ time, isStreaming }: { time: number | null; isStreaming: boolean }) {
-  const valueMs = time ?? 0;
-  const seconds = (valueMs / 1000).toFixed(1);
+  if (time == null) return null;
+  const seconds = (time / 1000).toFixed(1);
   const label = isStreaming ? 'Avg TTFB ' : '';
   const tooltip = isStreaming
     ? 'Average time to first byte (first streamed chunk) from request start'

@@ -102,14 +102,14 @@ interface EndpointContextValue {
 
 const EndpointContext = createContext<EndpointContextValue | null>(null);
 
-export function EndpointProvider({ children }: { children: ReactNode }) {
-  const initialEndpoints = loadEndpoints();
-  const initialActiveId = loadActiveId() || initialEndpoints[0]?.id || 'default';
+function initEndpointState(): EndpointState {
+  const endpoints = loadEndpoints();
+  const activeEndpointId = loadActiveId() || endpoints[0]?.id || 'default';
+  return { endpoints, activeEndpointId };
+}
 
-  const [state, dispatch] = useReducer(endpointReducer, {
-    endpoints: initialEndpoints,
-    activeEndpointId: initialActiveId,
-  });
+export function EndpointProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(endpointReducer, undefined, initEndpointState);
 
   const activeEndpoint = state.endpoints.find(e => e.id === state.activeEndpointId) || state.endpoints[0];
 
